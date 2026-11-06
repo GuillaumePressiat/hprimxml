@@ -1,0 +1,140 @@
+---
+title: "Découvrir hprimxml"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Découvrir hprimxml}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+options(width = 100, tibble.width = Inf, pillar.min_chars = Inf)
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+dossier <- tempfile("decouverte_")
+dir.create(dossier)
+knitr::opts_knit$set(root.dir = dossier)
+voir_xml <- function(f, lignes = NULL) {
+  x <- readLines(f, warn = FALSE, encoding = "UTF-8")
+  if (!is.null(lignes)) x <- x[lignes]
+  cat("```xml\n", paste(x, collapse = "\n"), "\n```\n", sep = "")
+}
+```
+
+HPRIM XML est le standard français d'échange de données entre logiciels hospitaliers,
+publié par Interop'Santé. hprimxml écrit ces messages à partir de tables (data.frames ou
+tibbles) et les relit vers les mêmes tables. Les schémas XSD officiels (versions 1.03a à
+2.4) sont embarqués : ils fixent l'ordre des éléments, distinguent attributs et éléments, et
+servent à valider chaque fichier.
+
+Cette vignette fait le tour du package en quelques minutes. Les vignettes suivantes
+détaillent chaque thème.
+
+```{r}
+library(hprimxml)
+library(tibble)
+```
+
+## Écrire un premier séjour
+
+Un message PMSI se construit à partir de tables reliées par `evt_id` (le séjour, donc le
+fichier) et `rum_id` (le RUM). Il suffit ici de deux tables, `evenements` et `rum`, les
+diagnostics étant donnés en colonnes du RUM.
+
+```{r}
+evenements <- tibble(
+  evt_id = "S000001", ipp = "123456789", sexe = "F",
+  date_naissance = as.Date("1960-04-02"),
+  nda = "240000001", venue_date_entree = as.Date("2024-05-02")
+)
+
+rum <- tibble(
+  evt_id = "S000001", rum_id = 1L, um = "1201",
+  um_date_entree = as.Date("2024-05-02"), um_mode_entree = "8",
+  dp = "I21.0", das = "E11.9, I10"
+)
+
+entete <- list(version = "2.00", emetteur = "DIM", destinataire = "DPI",
+               date_heure_production = as.POSIXct("2024-05-03 08:00:00", tz = "UTC"))
+
+fichiers <- write_evenements_pmsi(evenements, rum, entete = entete, out_dir = "sortie",
+                                  xmlns = NULL)
+fichiers
+```
+
+Un fichier par séjour, nommé d'après `evt_id`. Le message est validé contre le XSD avant
+d'être écrit : un message invalide n'est pas déposé. Voici le RUM produit :
+
+```{r, echo = FALSE, results = "asis"}
+x <- readLines(fichiers, warn = FALSE)
+voir_xml(fichiers, grep("<rum ", x):grep("</rum>", x))
+```
+
+L'ordre des éléments, les attributs (`action`, `mode`) et le format des dates viennent du
+XSD ; le point des codes CIM-10 est retiré.
+
+## Valider
+
+```{r}
+hprim_validate(fichiers)
+```
+
+Un vecteur vide : le fichier est conforme. Sur un fichier qui ne l'est pas, on obtient la
+liste des erreurs (voir la vignette *Validation*).
+
+## Relire
+
+```{r}
+t <- read_evenements_pmsi("sortie")
+names(t)
+t$rum[, c("evt_id", "rum_id", "um", "um_date_entree", "um_mode_entree")]
+t$diagnostics
+```
+
+Les fonctions de lecture renvoient les tables qu'attendent les fonctions d'écriture, avec
+des colonnes typées (`Date`, `POSIXct`, `hms`, entiers). Ce qu'on lit se réécrit tel quel.
+
+## Déposer des RUM unitaires avec leur `.ok`
+
+En production, on dépose souvent un fichier par RUM, accompagné d'un marqueur `.ok` vide
+posé une fois le fichier complet. L'identifiant du message est le nom du fichier.
+
+```{r}
+write_evenements_pmsi(evenements, rum, entete = entete, out_dir = "depot",
+                      xmlns = NULL, par_rum = TRUE, fichier_ok = TRUE)
+list.files("depot")
+suivi_depots("depot")[, c("evt_id", "complet")]
+```
+
+Côté destinataire, `read_evenements_pmsi("depot", exiger_ok = TRUE)` ne lit que les dépôts
+terminés.
+
+## Les autres messages
+
+Le serveur d'actes (`write_evenements_serveur_actes()`) et les états patient
+(`write_evenements_etat_patient()`, diagnostics ou IGS2) fonctionnent de la même façon,
+avec leurs propres tables.
+
+## Tout message, sous forme de liste
+
+Sous les tables, deux fonctions génériques lisent et écrivent n'importe quel message HPRIM
+XML sous forme de liste R :
+
+```{r}
+msg <- hprim_parse_xml(fichiers)
+msg$evenementsPMSI$evenementPMSI[[1]]$rss$rum[[1]]$uniteMedicale$code
+```
+
+`hprim_to_xml(msg)` réécrit la liste ; l'ordre des éléments vient du XSD.
+
+## Carte des fonctions
+
+| besoin | fonctions | vignette |
+|---|---|---|
+| écrire depuis des tables | `write_evenements_pmsi()`, `write_evenements_serveur_actes()`, `write_evenements_etat_patient()` | *Écriture* |
+| relire vers des tables | `read_evenements_pmsi()`, `read_evenements_serveur_actes()`, `read_evenements_etat_patient()` | *Lecture* |
+| contrôler un message | `hprim_validate()`, argument `validate_xsd` | *Validation* |
+| suivre des dépôts | `suivi_depots()`, arguments `fichier_ok` et `exiger_ok` | *Écriture*, *Lecture* |
+| inspecter ou retoucher un message | `iter_evenements_*()`, `hprim_parse_xml()`, `hprim_to_xml()` | *Arbres intermédiaires* |
+
+Le package est le portage R de [pyhprimxml](https://github.com/GuillaumePressiat/pyhprimxml) :
+mêmes tables, mêmes options, et fichiers identiques octet pour octet.

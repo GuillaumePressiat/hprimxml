@@ -1,0 +1,266 @@
+---
+output: github_document
+---
+
+<!-- README.md est généré à partir de README.Rmd : modifier README.Rmd puis lancer
+     knitr::knit("README.Rmd"). Le code affiché est lu dans inst/exemples/ et exécuté. -->
+
+```{r setup, include = FALSE}
+pkg <- normalizePath(".")
+ex <- function(nom) readLines(file.path(pkg, "inst", "exemples", paste0("exemple_", nom, ".R")),
+                              encoding = "UTF-8")
+sortie <- tempfile("readme_")
+dir.create(sortie)
+knitr::opts_knit$set(root.dir = sortie)
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", warning = FALSE, message = FALSE)
+xml <- function(f) cat("```xml\n", paste(readLines(f, warn = FALSE, encoding = "UTF-8"), collapse = "\n"),
+                       "\n```\n", sep = "")
+tab <- function(df) {
+  df <- as.data.frame(df)
+  for (n in names(df)) {
+    if (is.list(df[[n]])) df[[n]] <- vapply(df[[n]], function(v) paste0("[", paste(v, collapse = ", "), "]"), "")
+    else df[[n]] <- ifelse(is.na(df[[n]]), "", format(df[[n]]))
+  }
+  knitr::kable(df)
+}
+```
+
+# hprimxml
+
+Écriture et lecture de fichiers [HPRIM XML](https://www.interopsante.org/hprim), standard
+d'interopérabilité français, depuis et vers des **data.frames** ou **tibbles**, guidées par
+les schémas XSD officiels (versions 1.03a à 2.4, embarqués dans le package).
+
+C'est le portage R du package Python
+[pyhprimxml](https://github.com/GuillaumePressiat/pyhprimxml) : mêmes tables, mêmes
+fonctions, mêmes options, et **fichiers identiques octet pour octet**. Les tests du package
+le vérifient sur tous les exemples ci-dessous.
+
+> **Projet en cours de développement.** À ce stade sans garantie : ce code n'engage que
+> celui qui l'utilise.
+
+| Message | Écriture | Lecture |
+|---|---|---|
+| `evenementsPMSI` (RSS MCO) | `write_evenements_pmsi()` | `read_evenements_pmsi()` |
+| `evenementsServeurActes` (actes CCAM) | `write_evenements_serveur_actes()` | `read_evenements_serveur_actes()` |
+| `evenementsServeurEtatsPatient` (diagnostics, IGS2…) | `write_evenements_etat_patient()` | `read_evenements_etat_patient()` |
+| Tout message HPRIM XML, sous forme de liste | `hprim_to_xml()`, `hprim_write_xml()` | `hprim_parse_xml()` |
+
+Et aussi : `hprim_validate()` (contrôle d'un message contre son XSD) et `suivi_depots()`
+(état des dépôts : quels `.xml` ont leur marqueur `.ok`).
+
+Ce que permet le package :
+
+- **un fichier par séjour, ou par RUM** (`par_rum = TRUE`), pour traiter, corriger et renvoyer
+  chaque RUM séparément ;
+- **identifiant du message = nom du fichier**, règle contrôlée à l'écriture ;
+- **dépôt sécurisé** : chaque `.xml` est écrit de façon atomique, et un marqueur `.ok` vide est
+  déposé une fois le fichier complet (`fichier_ok = TRUE`) ; à la lecture, `exiger_ok = TRUE`
+  ignore les dépôts inachevés ;
+- **diagnostics** au choix en format long (une ligne par code), en colonne liste ou en chaîne
+  séparée par des virgules ;
+- **namespace** HPRIM, absent (`xmlns = NULL`) ou vide (`xmlns = ""`), et encodage UTF-8 ou
+  ISO-8859-1 ;
+- **validation XSD** de chaque fichier écrit, en mode erreur par défaut ;
+- **colonnes-chemins** (`` `patient/@anonyme` ``, `` `medecinResponsable/noRPPS` ``…) pour
+  atteindre n'importe quel élément du XSD ;
+- **relecture** vers les mêmes tables, avec des colonnes typées (`Date`, `POSIXct`, `hms`,
+  entiers).
+
+## Guide
+
+Cinq vignettes, publiées aussi comme articles du site :
+
+1. **Découvrir hprimxml** : le tour du package en quelques minutes, et la carte des fonctions ;
+2. **Écriture** : ePMSI, serveur d'actes, états patient (dont l'IGS2), RUM unitaires, options ;
+3. **Lecture** : les mêmes messages, colonnes typées, `extra`, dépôts `.ok`, fichiers d'autres
+   producteurs ;
+4. **Validation** : `hprim_validate()`, `validate_xsd`, versions, erreurs courantes ;
+5. **Arbres intermédiaires et listes** : `iter_evenements_*()`, `hprim_parse_xml()`,
+   `hprim_to_xml()`.
+
+```r
+vignette("decouverte", package = "hprimxml")
+```
+
+Les pages d'aide des fonctions d'écriture contiennent les scripts d'exemple complets, à
+exécuter avec `example()` : par exemple `example(write_evenements_etat_patient)` calcule un IGS2
+détaillé à partir de mesures brutes et écrit les messages correspondants. Les scripts sont
+aussi livrés dans le package : `list.files(system.file("exemples", package = "hprimxml"))`.
+
+## Installation
+
+```r
+# install.packages("remotes")
+remotes::install_github("GuillaumePressiat/hprimxml", build_vignettes = TRUE)
+```
+
+Dépendances : `xml2`, `hms`, `tibble`.
+
+Tous les exemples écrivent en **version 2.00**, déclarée une fois dans l'en-tête
+(`entete <- list(version = "2.00", ...)`). Sans précision, le package écrit en 2.4, la
+dernière version publiée ; l'argument `version` d'un appel l'emporte sur l'en-tête.
+
+## 1. Écriture : des tables vers HPRIM XML
+
+### Un séjour avec mutation, par séjour puis par RUM
+
+Une patiente entre par les urgences en cardiologie (UM 1201), est mutée en médecine
+(UM 3405), puis rentre à domicile : un RSS de deux RUM, avec de vrais codes CIM-10 et CCAM.
+Le script (`inst/exemples/exemple_sejour.R`) écrit le séjour en un fichier, puis en RUM
+unitaires avec leurs marqueurs `.ok`, et le relit.
+
+```{r sejour, code = ex("sejour")}
+```
+
+Les quatre tables, reliées par `evt_id` (le séjour, donc le fichier) et `rum_id` (le RUM) :
+
+**`evenements`** : une ligne par séjour.
+
+```{r, echo = FALSE}
+tab(evenements)
+```
+
+**`rum`** : une ligne par RUM ; `rum_emetteur` est l'identifiant XML du RUM, la colonne
+`` `medecinResponsable/noRPPS` `` est une colonne-chemin.
+
+```{r, echo = FALSE}
+tab(rum)
+```
+
+**`diagnostics`** : format long, `type` dans DP, DR, DAS, DAD ; le point des codes CIM-10 est
+retiré à l'écriture.
+
+```{r, echo = FALSE}
+tab(diagnostics)
+```
+
+**`actes`** : une ligne par acte CCAM ; `quantite` vaut 1 par défaut.
+
+```{r, echo = FALSE}
+tab(actes)
+```
+
+Les RUM relus, diagnostics en colonnes (`rum_relu`) :
+
+```{r, echo = FALSE}
+tab(rum_relu)
+```
+
+Le second RUM, écrit en RUM unitaire (`sortie/rum/S240001_2.xml`) :
+
+```{r, echo = FALSE, results = "asis"}
+xml("sortie/rum/S240001_2.xml")
+```
+
+### Diagnostics : format long, liste ou chaîne
+
+Les diagnostics d'un RUM se donnent au choix en format long (table `diagnostics`), ou en
+colonnes `dp`, `dr`, `das`, `dad` de `rum`, `das` et `dad` étant une colonne liste ou une chaîne
+séparée par des virgules. Les trois formes produisent le même fichier ; le script le vérifie.
+
+```{r diagnostics, code = ex("diagnostics")}
+```
+
+### Règle : identifiant du message = nom du fichier
+
+L'identifiant du message est **exactement le nom du fichier sans extension** : `{evt_id}.xml`
+par défaut, `{evt_id}_{rum_id}.xml` avec `par_rum = TRUE`, ou le nom produit par le gabarit
+`filename` (qui dispose aussi de `{rss_id}` et `{rum_id}`). Une colonne `identifiant_message`
+contradictoire fait échouer l'écriture ; le XSD limite l'identifiant à 12 caractères (lettres,
+chiffres, `-`, `,`, `_`) ; deux messages de même nom font échouer l'écriture.
+`identifiant_egal_nom_fichier = FALSE` rend identifiant et nom de fichier indépendants.
+
+### États patient : IGS2 détaillé
+
+Chaque item de l'IGS2 est un attribut de `<igs2>` qui porte une **classe** (`age="60A69"`…),
+plus le score global `valeurGlobale`. Le script part des pires valeurs des 24 premières heures
+et applique la grille de la SFAR (<https://sfar.org/scores/igs2.php>, d'après Le Gall JR et
+coll., *JAMA* 1993; 270: 2957-2963). Le XSD impose un repère : ici le `recueil` (colonnes
+`recueil_id`, `recueil_date`, `recueil_uf`), qui donne la date **et l'UF** où les états ont été
+observés, pour que le récepteur retrouve le RUM même un jour de mutation. Le contenu est
+exclusif : un message porte soit des diagnostics, soit un IGS2.
+
+```{r igs2, code = ex("igs2")}
+```
+
+La table de contrôle produite par le script :
+
+```{r, echo = FALSE}
+tab(controle)
+```
+
+Le fichier produit pour le premier patient :
+
+```{r, echo = FALSE, results = "asis"}
+xml("sortie/igs2/IGS240001.xml")
+```
+
+Les règles de recueil (pires valeurs, Glasgow avant sédation, bilirubine seulement en cas
+d'ictère…) restent celles de votre service.
+
+### Régénérer les fichiers d'exemple du projet
+
+Les scripts `exemple_pmsi.R`, `exemple_serveur_actes.R` et `exemple_etat_patient.R` de
+`inst/exemples/` régénèrent les trois fichiers de référence du projet (PMSI, serveur d'actes,
+états patient), en version 2.00 :
+
+```r
+source(system.file("exemples", "exemple_pmsi.R", package = "hprimxml"))
+```
+
+## 2. Lecture : des fichiers HPRIM XML vers les tables
+
+Les fonctions `read_*()` sont l'inverse exact des fonctions `write_*()` : elles renvoient
+les mêmes tables (tibbles), avec les mêmes noms de colonnes.
+
+```r
+t <- read_evenements_pmsi("dossier/")          # fichier(s), dossier, motif glob
+t$evenements; t$rum; t$diagnostics; t$actes
+```
+
+- **lecture guidée par le XSD** : un élément répétable est toujours une liste, même unique ;
+- **colonnes typées** : `xsd:date` → `Date`, `xsd:dateTime` → `POSIXct` (UTC, heure du
+  fichier conservée), `xsd:time` → `hms`, entiers → `integer`, le reste en texte ;
+- **clés reconstruites** : `evt_id` est le nom du fichier, `rum_id` le rang du RUM ;
+- **en-tête** relu dans des colonnes de `evenements`, qui priment à la réécriture ;
+- `extra = list(rum = "@classant")` : colonnes-chemins supplémentaires ;
+- `format_diagnostics = "colonnes"` : `dp`, `dr`, `das`, `dad` dans `rum` ;
+- `exiger_ok = TRUE` : ne lire que les dépôts terminés.
+
+## Options d'écriture
+
+| argument | valeurs | effet |
+|---|---|---|
+| `xmlns` | `HPRIM_NS` (défaut), `NULL`, `""` | namespace HPRIM ; aucune déclaration ; `xmlns=""` littéral |
+| `validate_xsd` | `"error"` (défaut), `"warn"`, `FALSE` | contrôle de chaque fichier contre son XSD |
+| `version` | `"2.4"`, `"2.00"`… | version du schéma ; sinon `entete$version`, sinon 2.4 |
+| `filename` | gabarit ou fonction | nom de chaque fichier |
+| `par_rum` | `FALSE` (défaut), `TRUE` | un fichier par RUM |
+| `fichier_ok` | `FALSE` (défaut), `TRUE` | dépose un `.ok` vide une fois chaque `.xml` complet |
+| `identifiant_egal_nom_fichier` | `TRUE` (défaut), `FALSE` | identifiantMessage = nom du fichier |
+| `colmap` | `list(ancien = "nouveau")` | renommage de colonnes existantes |
+| `encoding` | `"UTF-8"` (défaut), `"ISO-8859-1"` | encodage des fichiers |
+
+## Cohérence avec pyhprimxml
+
+`tests/testthat/test-exemples.R` exécute chaque script de `inst/exemples/` et vérifie que les
+fichiers produits (`.xml` et `.ok`) sont identiques, octet pour octet, à ceux du script Python
+équivalent. Les fichiers de référence sont produits par :
+
+```bash
+PYTHONPATH=../pyhprimxml python tools/fixtures_python.py
+```
+
+La couche de base (`hprim_parse_xml()`, `hprim_to_xml()`) est vérifiée de la même façon sur
+les fichiers d'exemple, pour six variantes d'options.
+
+## Documentation
+
+Le site (README, vignettes et référence des fonctions) est construit avec pkgdown et publié sur GitHub
+Pages par `.github/workflows/pkgdown.yaml`, qui vérifie au passage que ce README est à jour.
+
+```r
+knitr::knit("README.Rmd")        # après toute modification d'un exemple
+pkgdown::build_site()
+```

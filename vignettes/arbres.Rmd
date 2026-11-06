@@ -1,0 +1,148 @@
+---
+title: "Arbres intermédiaires et listes"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Arbres intermédiaires et listes}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+options(width = 100, tibble.width = Inf, pillar.min_chars = Inf)
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", message = FALSE)
+dossier <- tempfile("arbres_")
+dir.create(dossier)
+knitr::opts_knit$set(root.dir = dossier)
+voir_xml <- function(x, debut = NULL, fin = NULL) {
+  x <- strsplit(x, "\n", fixed = TRUE)[[1]]
+  if (!is.null(debut)) x <- x[grep(debut, x, fixed = TRUE)[1]:grep(fin, x, fixed = TRUE)[1]]
+  cat("```xml\n", paste(x, collapse = "\n"), "\n```\n", sep = "")
+}
+```
+
+```{r}
+library(hprimxml)
+library(tibble)
+```
+
+Entre les tables et le fichier XML, chaque message passe par un **arbre** : une liste R
+imbriquée qui décrit le message. Les fonctions d'écriture enchaînent trois étapes :
+
+1. `iter_evenements_*()` : tables → un arbre par événement ;
+2. `hprim_to_xml()` : arbre → XML, dans l'ordre du XSD ;
+3. dépôt du fichier (nom, identifiant du message, validation, `.ok`).
+
+Manipuler ces arbres sert à inspecter un message avant de l'écrire, à le retoucher, ou à
+traiter un message que les tables ne couvrent pas.
+
+## Convention des listes
+
+C'est la même que celle du dictionnaire du package Python :
+
+- une seule clé à la racine : l'élément racine, par exemple `list(evenementsPMSI = list(...))` ;
+- attributs et éléments enfants sont des clés de la même liste nommée ; le préfixe `@` est
+  accepté mais facultatif, c'est le XSD qui tranche ;
+- un élément répété est une **liste non nommée** (`rum = list(list(...), list(...))`), ou un
+  vecteur pour un élément simple (`modificateur = c("7", "J")`) ;
+- un élément à contenu simple portant des attributs utilise la clé `#text` ;
+- l'ordre des clés n'a pas d'importance.
+
+## Inspecter les arbres : `iter_evenements_*()`
+
+```{r}
+evenements <- tibble(evt_id = "S000001", ipp = "123456789", sexe = "F",
+                     date_naissance = as.Date("1960-04-02"), nda = "240000001",
+                     venue_date_entree = as.Date("2024-05-02"))
+rum <- tibble(evt_id = "S000001", rum_id = 1:2, um = c("1201", "3405"),
+              um_date_entree = as.Date(c("2024-05-02", "2024-05-04")), um_mode_entree = c("8", "6"),
+              dp = c("I21.0", "I50.1"))
+entete <- list(emetteur = "DIM", destinataire = "DPI",
+               date_heure_production = as.POSIXct("2024-05-06 08:00:00", tz = "UTC"))
+
+arbres <- iter_evenements_pmsi(evenements, rum, entete = entete)
+length(arbres)
+names(arbres[[1]])
+```
+
+Chaque élément contient la ligne d'événement (`evt`) et l'arbre du message (`tree`) :
+
+```{r}
+arbre <- arbres[[1]]$tree
+str(arbre$evenementsPMSI$evenementPMSI$rss$rum[[1]], max.level = 2)
+```
+
+Avec `par_rum = TRUE`, on obtient un arbre par RUM :
+
+```{r}
+length(iter_evenements_pmsi(evenements, rum, entete = entete, par_rum = TRUE))
+```
+
+## Retoucher un arbre avant de l'écrire
+
+L'arbre est une liste ordinaire : on peut la modifier, puis l'écrire avec `hprim_to_xml()`.
+Ici, on passe le message en mode test et on ajoute un commentaire :
+
+```{r}
+arbre$evenementsPMSI$enteteMessage$modeTraitement <- "test"
+arbre$evenementsPMSI$enteteMessage$commentaireMessage <- "Envoi de test"
+xml <- hprim_to_xml(arbre, xmlns = NULL, validate_xsd = "error")
+```
+
+```{r, echo = FALSE, results = "asis"}
+voir_xml(xml, "<enteteMessage", "</enteteMessage>")
+```
+
+L'ordre des éléments vient du XSD, quel que soit l'ordre d'ajout des clés. Une clé inconnue
+du XSD est refusée (`strict = TRUE`, par défaut) : une faute de frappe ne passe pas
+inaperçue.
+
+```{r, error = TRUE}
+arbre$evenementsPMSI$enteteMessage$commentaireMesage <- "faute de frappe"
+hprim_to_xml(arbre)
+```
+
+## Lire un message en liste : `hprim_parse_xml()`
+
+`hprim_parse_xml()` lit n'importe quel message HPRIM XML en liste, en s'appuyant sur le XSD :
+les éléments répétables sont **toujours** des listes non nommées, même avec un seul élément,
+et les valeurs sont typées.
+
+Le XSD décide de ce qui est une liste. Dans un message PMSI, `evenementPMSI` est répétable :
+c'est une liste d'événements, même s'il n'y en a qu'un. Dans un message serveur d'actes,
+`evenementServeurActe` ne l'est pas : c'est directement l'événement. `acteCCAM`, lui, est
+répétable.
+
+```{r}
+f <- system.file("extdata", "actes_00001.xml", package = "hprimxml")
+msg <- hprim_parse_xml(f)
+evt <- msg$evenementsServeurActes$evenementServeurActe     # un seul événement : pas de [[1]]
+actes <- evt$actesCCAM$acteCCAM                             # liste d'actes
+length(actes)
+actes[[1]]$codeActe
+class(actes[[1]]$execute$date)
+```
+
+## Retoucher un message reçu
+
+Pour un traitement que les tables ne couvrent pas, on lit le message en liste, on le modifie,
+puis on le réécrit. Ici, on remplace le code de l'unité fonctionnelle exécutante de chaque
+acte :
+
+```{r}
+msg$evenementsServeurActes$evenementServeurActe$actesCCAM$acteCCAM <- lapply(
+  msg$evenementsServeurActes$evenementServeurActe$actesCCAM$acteCCAM,
+  function(a) {
+    a$executant$uniteFonctionnelle$code <- "9999"
+    a
+  }
+)
+hprim_write_xml(msg, "actes_modifies.xml", validate_xsd = "warn")
+```
+
+```{r, echo = FALSE, results = "asis"}
+voir_xml(paste(readLines("actes_modifies.xml", warn = FALSE, encoding = "UTF-8"), collapse = "\n"),
+         "<executant>", "</executant>")
+```
+
+`hprim_to_xml(msg, drop_empty = FALSE)` conserve les éléments vides : relu puis réécrit ainsi,
+un fichier redonne exactement l'original (à la mise en forme près).

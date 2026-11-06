@@ -1,0 +1,140 @@
+---
+title: "Validation"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Validation}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+options(width = 100, tibble.width = Inf, pillar.min_chars = Inf)
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", message = FALSE)
+dossier <- tempfile("validation_")
+dir.create(dossier)
+knitr::opts_knit$set(root.dir = dossier)
+```
+
+```{r}
+library(hprimxml)
+library(tibble)
+```
+
+hprimxml embarque les schémas XSD officiels d'Interop'Santé. Ils servent à **valider** un
+message : structure, ordre des éléments, valeurs autorisées, formats des dates et des codes.
+La validation s'appuie sur libxml2 (via xml2), comme le package Python avec lxml.
+
+## Valider un fichier : `hprim_validate()`
+
+`hprim_validate()` renvoie la liste des erreurs : un vecteur vide si le message est conforme.
+Le fichier PMSI d'exemple, produit par un autre logiciel, ne l'est pas tout à fait :
+
+```{r}
+f <- system.file("extdata", "pmsi_00001.xml", package = "hprimxml")
+hprim_validate(f)
+```
+
+L'agent destinataire n'a pas de `code`, obligatoire dans le XSD. La fonction accepte un chemin,
+une chaîne XML, un vecteur raw ou un document xml2.
+
+## Versions et namespace
+
+Le schéma utilisé est celui de la **version déclarée** dans le message (`version="2.00"`) :
+
+```{r}
+hprim_available_versions()
+```
+
+Chaque XSD n'accepte que sa propre version. Les schémas existent en deux variantes, avec et
+sans namespace : un message sans namespace (`xmlns = NULL`) ou à namespace vide (`xmlns = ""`)
+est validé automatiquement avec la variante adaptée.
+
+```{r}
+msg <- hprim_parse_xml(f)
+for (ns in list(HPRIM_NS, NULL, "")) {
+  print(length(hprim_validate(hprim_to_xml(msg, xmlns = ns))))
+}
+```
+
+## Valider à l'écriture : `validate_xsd`
+
+Les fonctions d'écriture valident chaque message **avant** de l'écrire. Un message invalide
+n'est pas déposé : ni `.xml`, ni `.ok`.
+
+```{r}
+evenements <- tibble(evt_id = "S000001", ipp = "123", sexe = "F", date_naissance = as.Date("1960-04-02"),
+                     nda = "240000001", venue_date_entree = as.Date("2024-05-02"))
+rum <- tibble(evt_id = "S000001", rum_id = 1L, um = "1201", um_date_entree = as.Date("2024-05-02"),
+              um_mode_entree = "8", dp = "CODE-INVALIDE")
+entete <- list(emetteur = "DIM", destinataire = "DPI")
+```
+
+Par défaut (`validate_xsd = "error"`), l'écriture échoue avec le message du validateur :
+
+```{r, error = TRUE}
+write_evenements_pmsi(evenements, rum, entete = entete, out_dir = "erreur")
+list.files("erreur")
+```
+
+Avec `"warn"`, le fichier est écrit et l'erreur devient un avertissement ; avec `FALSE`, aucune
+validation n'est faite.
+
+```{r}
+p <- withCallingHandlers(
+  write_evenements_pmsi(evenements, rum, entete = entete, out_dir = "avertissement", validate_xsd = "warn"),
+  warning = function(w) { message("Avertissement : ", substr(conditionMessage(w), 1, 70), "..."); invokeRestart("muffleWarning") }
+)
+basename(p)
+```
+
+## Contrôles faits avant le XSD
+
+Certaines erreurs sont détectées par le package lui-même, avec un message explicite :
+
+```{r, error = TRUE}
+# colonne obligatoire manquante
+write_evenements_pmsi(evenements[, -2], rum, entete = entete, out_dir = "x")
+```
+
+```{r, error = TRUE}
+# identifiant du message (= nom du fichier) de plus de 12 caractères
+write_evenements_pmsi(evenements, transform(rum, dp = "I21.0"), entete = entete, out_dir = "x",
+                      filename = "SEJOUR_{nda}.xml")
+```
+
+```{r, error = TRUE}
+# DP donné deux fois pour un même RUM
+diag <- tibble(evt_id = "S000001", rum_id = 1L, type = "DP", code = "I10")
+write_evenements_pmsi(evenements, transform(rum, dp = "I21.0"), diag, entete = entete, out_dir = "x")
+```
+
+```{r, error = TRUE}
+# clé inconnue du XSD dans une liste (mode strict, par défaut)
+msg$evenementsPMSI$enteteMessage$champInvente <- "x"
+hprim_to_xml(msg)
+```
+
+## Éléments vides
+
+Les fichiers reçus contiennent parfois des éléments vides, non conformes : `<seance></seance>`,
+des attributs à `""`. À l'écriture, `drop_empty = TRUE` (par défaut) les supprime, sauf les
+éléments obligatoires du XSD, conservés même vides (`<diagnostics/>`, `<divers/>` en 2.4).
+
+```{r}
+msg <- hprim_parse_xml(f)
+brut <- hprim_to_xml(msg, drop_empty = FALSE)
+nettoye <- hprim_to_xml(msg)
+c(brut = grepl("<seance", brut), nettoye = grepl("<seance", nettoye))
+```
+
+## Ce que la validation ne vérifie pas
+
+Le XSD contrôle la **forme** d'un message, pas son sens :
+
+- l'existence d'un code CIM-10 ou CCAM (seul son format est vérifié) ;
+- la cohérence des dates (une sortie avant l'entrée passe la validation) ;
+- les règles propres au logiciel récepteur (rattachement d'un état patient à un RUM,
+  identifiants attendus…).
+
+Pour un contrôle indépendant, l'ANS propose un validateur en ligne des messages HPRIM XML
+(EVS Client, sur interop.esante.gouv.fr).

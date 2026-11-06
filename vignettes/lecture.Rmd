@@ -1,0 +1,176 @@
+---
+title: "Lecture : ePMSI, serveur d'actes, états patient"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Lecture : ePMSI, serveur d'actes, états patient}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+options(width = 100, tibble.width = Inf, pillar.min_chars = Inf)
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", message = FALSE)
+dossier <- tempfile("lecture_")
+dir.create(dossier)
+knitr::opts_knit$set(root.dir = dossier)
+```
+
+```{r fichiers, include = FALSE}
+# Produit les fichiers lus dans cette vignette : scripts de inst/exemples/
+for (nom in c("sejour", "igs2")) {
+  suppressWarnings(sys.source(system.file("exemples", paste0("exemple_", nom, ".R"), package = "hprimxml"),
+                              envir = new.env()))
+}
+```
+
+```{r}
+library(hprimxml)
+```
+
+Les fonctions `read_*()` sont l'inverse exact des fonctions `write_*()` : elles renvoient
+les mêmes tables (des tibbles), avec les mêmes noms de colonnes. Ce qu'on lit se réécrit tel
+quel.
+
+Elles acceptent un fichier, plusieurs fichiers, un dossier (tous ses `.xml`) ou un motif
+glob (`"arrivee/*_2024*.xml"`). Deux clés n'existent pas dans le XML et sont reconstruites :
+
+- `evt_id` est le **nom du fichier** sans extension (suffixé `_1`, `_2`… si un fichier contient
+  plusieurs événements) ;
+- `rum_id` est le **rang du RUM** dans le RSS ; l'identifiant XML du RUM est dans `rum_emetteur`.
+
+## ePMSI : `read_evenements_pmsi()`
+
+On relit ici le séjour écrit par l'exemple de la vignette *Écriture* (deux RUM, sans
+namespace).
+
+```{r}
+t <- read_evenements_pmsi("sortie/sejour")
+names(t)
+t$evenements[, c("evt_id", "identifiant_message", "ipp", "sexe", "date_naissance", "nda",
+                 "venue_date_entree", "venue_date_sortie")]
+t$rum[, c("evt_id", "rum_id", "rum_emetteur", "um", "um_date_entree", "um_heure_entree",
+          "um_mode_entree", "um_provenance", "um_mode_sortie")]
+t$diagnostics
+t$actes[, c("evt_id", "rum_id", "code", "phase", "activite", "quantite", "date_realisation")]
+```
+
+Les colonnes sont typées d'après le XSD :
+
+```{r}
+vapply(t$rum[, c("date_action", "um_date_entree", "um_heure_entree", "rum_id")],
+       function(x) class(x)[1], "")
+```
+
+| type XSD | colonne R |
+|---|---|
+| `xsd:date` | `Date` |
+| `xsd:dateTime` | `POSIXct`, en UTC : l'heure écrite dans le fichier est conservée |
+| `xsd:time` | `hms` |
+| types entiers | `integer` |
+| le reste, et tous les attributs | `character` |
+
+L'en-tête du message est relu dans des colonnes de `evenements` (`version`, `emetteur`,
+`destinataire`, `date_heure_production`…). À la réécriture, ces colonnes priment sur la liste
+`entete`.
+
+### Diagnostics en colonnes
+
+```{r}
+tc <- read_evenements_pmsi("sortie/sejour", format_diagnostics = "colonnes")
+tc$rum[, c("evt_id", "rum_id", "dp", "dr", "das")]
+tc$rum$das
+```
+
+`das` et `dad` sont des colonnes liste ; la table `diagnostics` est alors vide.
+
+### Éléments sans colonne dédiée : `extra`
+
+`extra` est le symétrique des colonnes-chemins de l'écriture : il liste, par table, des chemins
+à extraire en plus.
+
+```{r}
+te <- read_evenements_pmsi("sortie/sejour", extra = list(rum = "medecinResponsable/noRPPS"))
+te$rum[, c("rum_id", "medecinResponsable/noRPPS")]
+```
+
+### RUM unitaires et dépôts `.ok`
+
+Chaque fichier de RUM unitaire redonne un événement à un seul RUM ; le séjour se retrouve par
+`nda` ou `rss_emetteur`.
+
+```{r}
+tr <- read_evenements_pmsi("sortie/rum")
+tr$rum[, c("evt_id", "rum_id", "rum_emetteur", "um")]
+tr$evenements[, c("evt_id", "nda", "rss_emetteur")]
+```
+
+Côté destinataire, on ne lit que les dépôts terminés. Simulons un dépôt en cours en retirant
+un `.ok` :
+
+```{r}
+file.remove("sortie/rum/S240001_2.ok")
+suivi_depots("sortie/rum")[, c("evt_id", "complet")]
+tr <- read_evenements_pmsi("sortie/rum", exiger_ok = TRUE)
+tr$evenements$evt_id
+```
+
+## Serveur d'actes : `read_evenements_serveur_actes()`
+
+Le package livre trois fichiers d'exemple produits par un autre logiciel (version 2.00). Le
+patient, la venue et l'intervention sont dans `evenements` ; une jointure sur `evt_id` les
+rattache aux actes.
+
+```{r}
+f <- system.file("extdata", "actes_00001.xml", package = "hprimxml")
+ta <- read_evenements_serveur_actes(f)
+ta$evenements[, c("evt_id", "ipp", "nom_usuel", "nda", "intervention_id",
+                  "intervention_date_debut", "intervention_uf")]
+merge(ta$actes[, c("evt_id", "acte_id", "code", "date_execution", "medecin")],
+      ta$evenements[, c("evt_id", "ipp", "nda")], by = "evt_id")
+```
+
+## États patient : `read_evenements_etat_patient()`
+
+### Diagnostics
+
+```{r}
+f <- system.file("extdata", "etat_patient_00001.xml", package = "hprimxml")
+td <- read_evenements_etat_patient(f)
+td$diagnostics
+```
+
+### IGS2
+
+Le repère du message (ici le recueil : identifiant, date et UF d'observation) a ses colonnes
+dédiées. L'IGS2 n'en a pas : on le relit avec `extra`, par les mêmes chemins que ceux de
+l'écriture.
+
+```{r}
+chemins <- c("igs2/@age", "igs2/@frequenceCardiaque", "igs2/@paO2_FIO2", "igs2/@scoreGlasgow",
+             "igs2/valeurGlobale")
+ti <- read_evenements_etat_patient("sortie/igs2", extra = list(evenements = chemins))
+ti$evenements[, c("evt_id", "recueil_id", "recueil_date", "recueil_uf", chemins)]
+```
+
+## Fichiers d'autres producteurs
+
+Les fichiers reçus ne sont pas toujours conformes au XSD. La lecture n'impose aucune
+validation : une valeur non conforme à son type est conservée en texte. Le fichier PMSI
+d'exemple contient ainsi une `<seance></seance>` vide, relue comme une valeur manquante :
+
+```{r}
+f <- system.file("extdata", "pmsi_00001.xml", package = "hprimxml")
+tp <- read_evenements_pmsi(f)
+tp$rum[, c("evt_id", "rum_id", "rum_emetteur", "rum_recepteur", "nb_seances")]
+```
+
+Ces fichiers contiennent un identifiant de message (`00001_pmsi`) différent de leur nom de
+fichier (`pmsi_00001.xml`). Pour les réécrire à l'identique, on désactive la règle
+identifiant = nom de fichier :
+
+```{r}
+p <- write_evenements_pmsi(tp$evenements, tp$rum, tp$diagnostics, tp$actes,
+                           out_dir = "reecrit", validate_xsd = FALSE,
+                           identifiant_egal_nom_fichier = FALSE)
+basename(p)
+```

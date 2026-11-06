@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<evenementsPMSI xmlns="http://www.hprim.org/hprimXML" version="2.00">
+	<enteteMessage>
+		<identifiantMessage>S240002</identifiantMessage>
+		<dateHeureProduction>2024-03-10T08:00:00</dateHeureProduction>
+		<emetteur>
+			<agents>
+				<agent categorie="application">
+					<code>DIM</code>
+				</agent>
+			</agents>
+		</emetteur>
+		<destinataire>
+			<agents>
+				<agent categorie="application">
+					<code>DPI</code>
+				</agent>
+			</agents>
+		</destinataire>
+	</enteteMessage>
+	<evenementPMSI>
+		<patient>
+			<identifiant>
+				<emetteur>
+					<valeur>190101338</valeur>
+				</emetteur>
+			</identifiant>
+			<personnePhysique sexe="M">
+				<dateNaissance>
+					<date>1951-07-02</date>
+				</dateNaissance>
+			</personnePhysique>
+		</patient>
+		<venue>
+			<identifiant>
+				<emetteur>
+					<valeur>240000124</valeur>
+				</emetteur>
+			</identifiant>
+			<entree>
+				<dateHeureOptionnelle>
+					<date>2024-03-04</date>
+				</dateHeureOptionnelle>
+			</entree>
+		</venue>
+		<rss>
+			<identifiantRSS>
+				<emetteur>240000124</emetteur>
+			</identifiantRSS>
+			<rum action="creation">
+				<dateAction>2024-03-04T00:00:00</dateAction>
+				<identifiant>
+					<emetteur>1</emetteur>
+				</identifiant>
+				<uniteMedicale>
+					<code>1201</code>
+					<entree mode="8">
+						<date>2024-03-04</date>
+					</entree>
+				</uniteMedicale>
+				<diagnostics>
+					<diagnosticPrincipal>
+						<codeCim10>I210</codeCim10>
+					</diagnosticPrincipal>
+					<diagnosticsSignificatifs>
+						<diagnosticSignificatif>
+							<codeCim10>E119</codeCim10>
+						</diagnosticSignificatif>
+						<diagnosticSignificatif>
+							<codeCim10>I10</codeCim10>
+						</diagnosticSignificatif>
+						<diagnosticSignificatif>
+							<codeCim10>E780</codeCim10>
+						</diagnosticSignificatif>
+						<diagnosticSignificatif>
+							<codeCim10>N183</codeCim10>
+						</diagnosticSignificatif>
+					</diagnosticsSignificatifs>
+				</diagnostics>
+			</rum>
+		</rss>
+	</evenementPMSI>
+</evenementsPMSI>

@@ -1,0 +1,42 @@
+Package: hprimxml
+Type: Package
+Title: Écriture et lecture de fichiers HPRIM XML
+Version: 0.2.0
+Authors@R: person("Guillaume", "Pressiat", email = "guillaume.pressiat@chu-brest.fr",
+    role = c("aut", "cre"))
+Description: Écriture et lecture de messages HPRIM XML (standard
+    d'interopérabilité français, Interop'Santé) depuis et vers des tables
+    (data.frames, tibbles) : PMSI (RSS MCO), serveur d'actes, états patient.
+    Guidé par les schémas XSD officiels embarqués (versions 1.03a à 2.4).
+    Portage R du package Python pyhprimxml : mêmes tables, mêmes options,
+    sortie XML identique octet pour octet.
+License: AGPL-3
+Encoding: UTF-8
+Language: fr
+Depends: R (>= 4.1)
+Imports:
+    xml2,
+    hms,
+    tibble,
+    tools,
+    stats,
+    utils
+Suggests:
+    knitr,
+    rmarkdown,
+    testthat (>= 3.0.0)
+VignetteBuilder: knitr
+Config/testthat/edition: 3
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3
+Collate: 
+    'xsd.R'
+    'write.R'
+    'common.R'
+    'depots.R'
+    'serveur_actes.R'
+    'etat_patient.R'
+    'hprimxml-package.R'
+    'parse.R'
+    'pmsi.R'
+URL: https://guillaumepressiat.github.io/hprimxml/, https://github.com/GuillaumePressiat/hprimxml

@@ -1,0 +1,40 @@
+url: https://guillaumepressiat.github.io/hprimxml/
+lang: fr
+template:
+  bootstrap: 5
+
+reference:
+  - title: Écrire depuis des tables
+    contents:
+      - write_evenements_pmsi
+      - write_evenements_serveur_actes
+      - write_evenements_etat_patient
+  - title: Lire vers des tables
+    contents:
+      - read_evenements_pmsi
+      - read_evenements_serveur_actes
+      - read_evenements_etat_patient
+  - title: Dépôts .ok
+    contents:
+      - suivi_depots
+  - title: XML, XSD et listes
+    contents:
+      - hprim_to_xml
+      - hprim_write_xml
+      - hprim_parse_xml
+      - hprim_validate
+      - hprim_available_versions
+      - HPRIM_NS
+  - title: Arbres intermédiaires
+    contents:
+      - starts_with("iter_")
+
+articles:
+  - title: Guide
+    navbar: ~
+    contents:
+      - decouverte
+      - ecriture
+      - lecture
+      - validation
+      - arbres

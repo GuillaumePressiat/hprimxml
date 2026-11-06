@@ -1,0 +1,202 @@
+---
+title: "Écriture : ePMSI, serveur d'actes, états patient"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Écriture : ePMSI, serveur d'actes, états patient}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+options(width = 100, tibble.width = Inf, pillar.min_chars = Inf)
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", warning = FALSE, message = FALSE)
+dossier <- tempfile("ecriture_")
+dir.create(dossier)
+knitr::opts_knit$set(root.dir = dossier)
+ex <- function(nom) readLines(system.file("exemples", paste0("exemple_", nom, ".R"), package = "hprimxml"),
+                              encoding = "UTF-8")
+voir_xml <- function(f, debut = NULL, fin = NULL) {
+  x <- readLines(f, warn = FALSE, encoding = "UTF-8")
+  if (!is.null(debut)) x <- x[grep(debut, x, fixed = TRUE)[1]:grep(fin, x, fixed = TRUE)[1]]
+  cat("```xml\n", paste(x, collapse = "\n"), "\n```\n", sep = "")
+}
+tab <- function(df) {
+  df <- as.data.frame(df)
+  for (n in names(df)) {
+    if (is.list(df[[n]])) df[[n]] <- vapply(df[[n]], function(v) paste0("[", paste(v, collapse = ", "), "]"), "")
+    else df[[n]] <- ifelse(is.na(df[[n]]), "", format(df[[n]]))
+  }
+  knitr::kable(df)
+}
+```
+
+Chaque type de message s'écrit à partir de tables, à raison d'**un fichier par événement**.
+Les principes sont communs aux trois messages :
+
+- **les clés** : `evt_id` désigne l'événement, donc le fichier ; `rum_id` (PMSI) relie les RUM
+  à leurs diagnostics et actes ;
+- **l'en-tête** : une liste `entete` (`version`, `emetteur`, `destinataire`…), dont chaque
+  clé peut aussi être une colonne de `evenements`, prioritaire ;
+- **les colonnes-chemins** : toute colonne dont le nom contient `/` ou commence par `@` est un
+  chemin XML relatif au noeud que décrit la table (`` `patient/@anonyme` ``, `` `@classant` ``) ;
+  tout le XSD reste ainsi accessible sans colonne dédiée ;
+- **la validation** : chaque message est validé contre son XSD avant d'être écrit.
+
+Les exemples ci-dessous sont les scripts de `inst/exemples/`, exécutés tels quels.
+
+## ePMSI : `write_evenements_pmsi()`
+
+### Un séjour avec mutation
+
+Entrée par les urgences en cardiologie, mutation en médecine, sortie à domicile : un RSS de
+deux RUM. Le script écrit le séjour en un fichier, puis en RUM unitaires, et le relit.
+
+```{r sejour, code = ex("sejour")}
+```
+
+```{r, include = FALSE}
+# tables du séjour, conservées pour la suite (les scripts suivants réutilisent ces noms)
+sejour <- list(evenements = evenements, rum = rum, diagnostics = diagnostics, actes = actes,
+               entete = entete)
+```
+
+Les quatre tables : `evenements` (une ligne par séjour), `rum` (une ligne par RUM),
+`diagnostics` (format long) et `actes` (une ligne par acte CCAM).
+
+```{r, echo = FALSE}
+tab(evenements)
+tab(rum)
+tab(diagnostics)
+tab(actes)
+```
+
+Le second RUM, en RUM unitaire :
+
+```{r, echo = FALSE, results = "asis"}
+voir_xml("sortie/rum/S240001_2.xml", "<rum ", "</rum>")
+```
+
+### Diagnostics : format long, liste ou chaîne
+
+Trois formes équivalentes, qui produisent le même fichier : la table `diagnostics` en format
+long ; des colonnes `dp`, `dr`, `das`, `dad` dans `rum`, avec `das` et `dad` en colonne liste ;
+ou ces mêmes colonnes avec `das` en chaîne séparée par des virgules.
+
+```{r diagnostics, code = ex("diagnostics")}
+```
+
+Les deux approches se combinent (DP en colonne, DAS en format long…), mais un DP ou un DR
+donné deux fois est refusé.
+
+### RUM unitaires, identifiant et dépôts `.ok`
+
+Avec `par_rum = TRUE`, chaque RUM devient un message. On reprend ici les tables du séjour
+avec mutation, conservées dans la liste `sejour`. Trois règles encadrent le nommage :
+
+- l'identifiant du message est **le nom du fichier sans extension** : `{evt_id}_{rum_id}` par
+  défaut, ou le résultat du gabarit `filename`, qui dispose aussi de `{rss_id}` et `{rum_id}` ;
+- le XSD limite cet identifiant à **12 caractères** (lettres, chiffres, `-`, `,`, `_`) ;
+- deux messages de même nom font échouer l'écriture.
+
+```{r}
+write_evenements_pmsi(sejour$evenements, sejour$rum, sejour$diagnostics, sejour$actes,
+                      entete = sejour$entete, out_dir = "depot", xmlns = NULL, par_rum = TRUE,
+                      filename = "R{rss_id}_{rum_id}.xml", fichier_ok = TRUE)
+list.files("depot")
+```
+
+Avec `fichier_ok = TRUE`, chaque `.xml` est d'abord écrit sous un nom temporaire puis renommé,
+et son `.ok` vide est déposé en dernier : le destinataire ne voit jamais un fichier incomplet.
+
+### Partir de colonnes existantes : `colmap`
+
+`colmap` renomme les colonnes d'une extraction existante vers les noms attendus :
+
+```{r}
+rum_source <- tibble::tibble(NAS = "S240001", NORUM = 1:2, CDURM = c("1201", "3405"),
+                             D8EEUE = as.Date(c("2024-03-04", "2024-03-06")), MDEEUE = c("8", "6"),
+                             DP = c("I21.0", "I50.1"))
+f <- write_evenements_pmsi(
+  sejour$evenements, rum_source, entete = sejour$entete, out_dir = "colmap", xmlns = NULL,
+  colmap = list(NAS = "evt_id", NORUM = "rum_id", CDURM = "um", D8EEUE = "um_date_entree",
+                MDEEUE = "um_mode_entree", DP = "dp")
+)
+basename(f)
+```
+
+## Serveur d'actes : `write_evenements_serveur_actes()`
+
+Deux tables : `evenements` (patient, venue, intervention et demande) et `actes` (une ligne par
+acte CCAM, avec son exécutant). Le script régénère le fichier d'exemple du projet.
+
+```{r actes, code = ex("serveur_actes")}
+```
+
+```{r, echo = FALSE}
+tab(actes)
+```
+
+Le premier acte produit :
+
+```{r, echo = FALSE, results = "asis"}
+voir_xml("sortie/actes/00001_acte.xml", "<acteCCAM", "</acteCCAM>")
+```
+
+`quantite` est ici une chaîne : le XSD la définit comme `nombre5`, une chaîne de chiffres.
+
+## États patient (ESEP) : `write_evenements_etat_patient()`
+
+Le message porte, au choix, des diagnostics, un IGS2, des dépendances… mais un seul de ces
+contenus à la fois. Il exige aussi un repère : une intervention (`intervention_*`), une date
+d'observation (`date_observation`) ou un recueil (`recueil_id`, `recueil_date`,
+`recueil_heure`, `recueil_uf`). Le recueil est le plus précis : il porte l'UF où les états ont
+été observés, qui permet au récepteur de retrouver le RUM, même un jour de mutation. En 2.4, un
+élément `<divers/>` est émis automatiquement.
+
+### Diagnostics
+
+```{r esep, code = ex("etat_patient")}
+```
+
+```{r, echo = FALSE, results = "asis"}
+voir_xml("sortie/etat_patient/00001_esep.xml", "<Diagnostics>", "</Diagnostics>")
+```
+
+### IGS2 détaillé
+
+Chaque item de l'IGS2 est un attribut de `<igs2>` portant une **classe** (`age="60A69"`…),
+plus le score global `valeurGlobale`. Le script part des pires valeurs des 24 premières heures
+et applique la grille de la SFAR (<https://sfar.org/scores/igs2.php>, d'après Le Gall JR et
+coll., *JAMA* 1993; 270: 2957-2963). L'IGS2 passe entièrement par des colonnes-chemins
+(`` `igs2/@age` ``, `` `igs2/valeurGlobale` ``…) ; le repère est un recueil dans l'UF de
+réanimation.
+
+```{r igs2, code = ex("igs2")}
+```
+
+La table de contrôle, avec la classe et les points de chaque item :
+
+```{r, echo = FALSE}
+tab(controle)
+```
+
+```{r, echo = FALSE, results = "asis"}
+voir_xml("sortie/igs2/IGS240001.xml", "<recueil>", "</igs2>")
+```
+
+Les règles de recueil (pires valeurs, Glasgow avant sédation, bilirubine seulement en cas
+d'ictère…) restent celles de votre service.
+
+## Options communes
+
+| argument | valeurs | effet |
+|---|---|---|
+| `xmlns` | `HPRIM_NS` (défaut), `NULL`, `""` | namespace HPRIM ; aucune déclaration ; `xmlns=""` littéral |
+| `validate_xsd` | `"error"` (défaut), `"warn"`, `FALSE` | contrôle de chaque fichier contre son XSD |
+| `version` | `"2.4"`, `"2.00"`… | version du schéma ; sinon `entete$version`, sinon 2.4 |
+| `filename` | gabarit ou fonction | nom de chaque fichier |
+| `fichier_ok` | `FALSE` (défaut), `TRUE` | dépose un `.ok` vide une fois chaque `.xml` complet |
+| `identifiant_egal_nom_fichier` | `TRUE` (défaut), `FALSE` | identifiantMessage = nom du fichier |
+| `colmap` | `list(ancien = "nouveau")` | renommage de colonnes |
+| `encoding` | `"UTF-8"` (défaut), `"ISO-8859-1"` | encodage des fichiers |
+| `par_rum` (PMSI) | `FALSE` (défaut), `TRUE` | un fichier par RUM |
