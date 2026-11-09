@@ -48,8 +48,8 @@ test_that("ordre des clés indifférent, préfixe @ facultatif, vecteurs = rép�
     )
   ))
   out <- hprim_to_xml(tree, validate_xsd = "error")
-  expect_match(out, "<modificateur>7</modificateur>\n\t+<modificateur>J</modificateur>")
-  expect_match(out, '<entree mode="8">\n\t+<date>2024-01-01</date>')
+  expect_match(out, "<modificateur>7</modificateur>\n +<modificateur>J</modificateur>")
+  expect_match(out, '<entree mode="8">\n +<date>2024-01-01</date>')
   expect_match(out, "<quantite>1</quantite>")
 })
 

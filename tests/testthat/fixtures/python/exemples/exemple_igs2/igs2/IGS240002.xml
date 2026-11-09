@@ -1,58 +1,58 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <evenementsServeurEtatsPatient version="2.00">
-	<enteteMessage>
-		<identifiantMessage>IGS240002</identifiantMessage>
-		<dateHeureProduction>2024-03-06T09:00:00</dateHeureProduction>
-		<emetteur>
-			<agents>
-				<agent categorie="application">
-					<code>REA</code>
-				</agent>
-			</agents>
-		</emetteur>
-		<destinataire>
-			<agents>
-				<agent categorie="application">
-					<code>DIM</code>
-				</agent>
-			</agents>
-		</destinataire>
-	</enteteMessage>
-	<patient>
-		<identifiant>
-			<emetteur>
-				<valeur>190101338</valeur>
-			</emetteur>
-		</identifiant>
-		<personnePhysique sexe="F">
-			<dateNaissance>
-				<date>1941-11-02</date>
-			</dateNaissance>
-		</personnePhysique>
-	</patient>
-	<venue>
-		<identifiant>
-			<emetteur>
-				<valeur>240000124</valeur>
-			</emetteur>
-		</identifiant>
-		<entree>
-			<dateHeureOptionnelle>
-				<date>2024-03-05</date>
-			</dateHeureOptionnelle>
-		</entree>
-	</venue>
-	<recueil>
-		<identifiant>
-			<emetteur>REC240002</emetteur>
-		</identifiant>
-		<date>2024-03-06</date>
-		<uniteFonctionnelle>
-			<code>4501</code>
-		</uniteFonctionnelle>
-	</recueil>
-	<igs2 action="creation" modeAdmission="chirUrgente" maladieChronique="cancerMetastatique" scoreGlasgow="14A18" age="superieurEgalA80" tensionArterielleSystolique="superieurEgalA200" frequenceCardiaque="70A119" temperature="superieurEgalA39" paO2_FIO2="rien" diurese="superieurA1" ureeSanguine="inferieurA10" leucocytes="superieurEgalA20" kaliemie="superieurEgalA5" natremie="superieurEgalA145" HCO3="superieurEgalA20" bilirubine="superieurA102,6">
-		<dateAction>2024-03-06T08:00:00</dateAction>
-		<valeurGlobale>56</valeurGlobale>
-	</igs2>
+  <enteteMessage>
+    <identifiantMessage>IGS240002</identifiantMessage>
+    <dateHeureProduction>2024-03-06T09:00:00</dateHeureProduction>
+    <emetteur>
+      <agents>
+        <agent categorie="application">
+          <code>REA</code>
+        </agent>
+      </agents>
+    </emetteur>
+    <destinataire>
+      <agents>
+        <agent categorie="application">
+          <code>DIM</code>
+        </agent>
+      </agents>
+    </destinataire>
+  </enteteMessage>
+  <patient>
+    <identifiant>
+      <emetteur>
+        <valeur>190101338</valeur>
+      </emetteur>
+    </identifiant>
+    <personnePhysique sexe="F">
+      <dateNaissance>
+        <date>1941-11-02</date>
+      </dateNaissance>
+    </personnePhysique>
+  </patient>
+  <venue>
+    <identifiant>
+      <emetteur>
+        <valeur>240000124</valeur>
+      </emetteur>
+    </identifiant>
+    <entree>
+      <dateHeureOptionnelle>
+        <date>2024-03-05</date>
+      </dateHeureOptionnelle>
+    </entree>
+  </venue>
+  <recueil>
+    <identifiant>
+      <emetteur>REC240002</emetteur>
+    </identifiant>
+    <date>2024-03-06</date>
+    <uniteFonctionnelle>
+      <code>4501</code>
+    </uniteFonctionnelle>
+  </recueil>
+  <igs2 action="creation" modeAdmission="chirUrgente" maladieChronique="cancerMetastatique" scoreGlasgow="14A18" age="superieurEgalA80" tensionArterielleSystolique="superieurEgalA200" frequenceCardiaque="70A119" temperature="superieurEgalA39" paO2_FIO2="rien" diurese="superieurA1" ureeSanguine="inferieurA10" leucocytes="superieurEgalA20" kaliemie="superieurEgalA5" natremie="superieurEgalA145" HCO3="superieurEgalA20" bilirubine="superieurA102,6">
+    <dateAction>2024-03-06T08:00:00</dateAction>
+    <valeurGlobale>56</valeurGlobale>
+  </igs2>
 </evenementsServeurEtatsPatient>

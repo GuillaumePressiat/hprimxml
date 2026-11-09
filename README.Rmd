@@ -255,6 +255,10 @@ PYTHONPATH=../pyhprimxml python tools/fixtures_python.py
 La couche de base (`hprim_parse_xml()`, `hprim_to_xml()`) est vérifiée de la même façon sur
 les fichiers d'exemple, pour six variantes d'options.
 
+Les deux packages écrivent le XML avec libxml2 : lxml en Python, xml2 en R. La structure (ordre
+des éléments, attributs, formats, validation) vient du XSD ; la mise en forme du texte final
+(indentation de deux espaces, échappement, encodage) est celle de libxml2, commune aux deux.
+
 ## Documentation
 
 Le site (README, vignettes et référence des fonctions) est construit avec pkgdown et publié sur GitHub

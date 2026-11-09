@@ -35,22 +35,6 @@ format_value <- function(v, xsd_type = NULL) {
   enc2utf8(as.character(v))
 }
 
-# ---- échappement (identique à libxml2 / lxml) -------------------------------
-
-escape_text <- function(x) {
-  x <- gsub("&", "&amp;", x, fixed = TRUE)
-  x <- gsub("<", "&lt;", x, fixed = TRUE)
-  x <- gsub(">", "&gt;", x, fixed = TRUE)
-  gsub("\r", "&#13;", x, fixed = TRUE)
-}
-
-escape_attr <- function(x) {
-  x <- escape_text(x)
-  x <- gsub("\"", "&quot;", x, fixed = TRUE)
-  x <- gsub("\t", "&#9;", x, fixed = TRUE)
-  gsub("\n", "&#10;", x, fixed = TRUE)
-}
-
 # Caractères absents de l'encodage cible -> références numériques (&#8364;)
 to_charrefs <- function(x, encoding) {
   if (toupper(encoding) %in% c("UTF-8", "UTF8")) return(x)
@@ -166,24 +150,22 @@ build_el <- function(w, name, value, type_name, path, required = FALSE) {
   el
 }
 
-# ---- sérialisation (format lxml : tabulations, <x/> si vide complexe) -------
+# ---- sérialisation : document xml2, mis en forme par libxml2 (comme lxml en Python) ----
 
-render <- function(el, depth, pretty, encoding, root_ns = NULL) {
-  ind <- if (pretty) strrep("\t", depth) else ""
-  attrs <- ""
-  if (!is.null(root_ns)) attrs <- root_ns
-  if (length(el$attrs)) {
-    vals <- vapply(el$attrs, function(v) to_charrefs(escape_attr(v), encoding), "")
-    attrs <- paste0(attrs, paste0(" ", names(el$attrs), "=\"", vals, "\"", collapse = ""))
-  }
-  open <- paste0(ind, "<", el$name, attrs)
-  if (!is.null(el$text) && !length(el$children)) {
-    return(paste0(open, ">", to_charrefs(escape_text(el$text), encoding), "</", el$name, ">"))
-  }
-  if (!length(el$children)) return(paste0(open, "/>"))
-  kids <- vapply(el$children, render, "", depth = depth + 1L, pretty = pretty, encoding = encoding)
-  sep <- if (pretty) "\n" else ""
-  paste0(open, ">", sep, paste(kids, collapse = sep), sep, ind, "</", el$name, ">")
+# Remplit un noeud xml2 à partir de l'arbre léger produit par build_el()
+fill_node <- function(node, el) {
+  for (a in names(el$attrs)) xml2::xml_set_attr(node, a, el$attrs[[a]])
+  if (!is.null(el$text) && !length(el$children)) xml2::xml_text(node) <- el$text
+  for (ch in el$children) fill_node(xml2::xml_add_child(node, ch$name), ch)
+  invisible(node)
+}
+
+as_xml2_document <- function(el, xmlns) {
+  doc <- xml2::xml_new_root(el$name)
+  root <- xml2::xml_root(doc)
+  if (!is.null(xmlns) && nzchar(xmlns)) xml2::xml_set_attr(root, "xmlns", xmlns)
+  fill_node(root, el)
+  doc
 }
 
 #' Écrire un message HPRIM XML à partir d'une liste
@@ -197,7 +179,8 @@ render <- function(el, depth, pretty, encoding, root_ns = NULL) {
 #' * un élément à contenu simple portant des attributs utilise la clé `#text`.
 #'
 #' L'ordre des clés n'a pas d'importance : les enfants sont émis dans l'ordre du
-#' XSD. La sortie est identique, octet pour octet, à celle de `to_xml()` en Python.
+#' XSD. Le document est construit et mis en forme par xml2 (libxml2), comme lxml en Python :
+#' la sortie est identique, octet pour octet, à celle de `to_xml()`.
 #'
 #' @param tree Liste `list(racine = list(...))`.
 #' @param version Version du schéma ; par défaut l'attribut `version` du message,
@@ -206,7 +189,7 @@ render <- function(el, depth, pretty, encoding, root_ns = NULL) {
 #'   `xmlns=""` littéralement sur la racine.
 #' @param encoding Encodage déclaré (`"UTF-8"` ou `"ISO-8859-1"`) ; les caractères
 #'   hors encodage deviennent des références numériques.
-#' @param pretty Indentation par tabulations.
+#' @param pretty Indentation (deux espaces, mise en forme de libxml2).
 #' @param drop_empty Supprime éléments et attributs vides (`NULL`, `NA`, `""`),
 #'   sauf les éléments complexes obligatoires du XSD.
 #' @param strict Erreur si une clé ne correspond à rien dans le XSD (sinon
@@ -236,8 +219,14 @@ hprim_to_xml <- function(tree, version = NULL, xmlns = HPRIM_NS, encoding = "UTF
   w <- new_writer(schema, xmlns, drop_empty, strict, encoding)
   el <- build_el(w, root_name, content, root_type(schema), root_name)
 
-  root_ns <- if (is.null(xmlns)) NULL else sprintf(" xmlns=\"%s\"", xmlns)
-  body <- render(el, 0L, pretty, encoding, root_ns)
+  doc <- as_xml2_document(el, xmlns)
+  body <- as.character(doc, options = if (pretty) c("format", "no_declaration") else "no_declaration")
+  body <- enc2utf8(body)
+  if (xmlns_vide <- identical(xmlns, "")) {
+    body <- sub(paste0("<", root_name), paste0("<", root_name, ' xmlns=""'), body, fixed = TRUE)
+  }
+  # caractères absents de l'encodage cible -> références numériques (&#8364;), comme libxml2
+  body <- to_charrefs(body, encoding)
   out <- paste0('<?xml version="1.0" encoding="', encoding, '" standalone="yes"?>\n', body)
 
   if (!isFALSE(validate_xsd)) {

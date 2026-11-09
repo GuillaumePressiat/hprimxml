@@ -87,3 +87,16 @@ test_that("états patient 2.4 : <divers/> et dateObservation", {
                                       out_dir = tempfile(), version = "2.00")
   expect_false(grepl("divers", paste(readLines(p2, warn = FALSE), collapse = "")))
 })
+
+test_that("\u00e9tats patient : un seul rep\u00e8re", {
+  evt <- tibble::tibble(evt_id = "EP1", ipp = "123", sexe = "F", date_naissance = as.Date("1970-01-01"),
+                        date_observation = as.Date("2024-01-02"),
+                        recueil_id = "R1", recueil_date = as.Date("2024-01-02"), recueil_uf = "4501")
+  dia <- tibble::tibble(evt_id = "EP1", type = "dp", code = "Z511")
+  ent <- list(emetteur = "A", destinataire = "B")
+  expect_error(write_evenements_etat_patient(evt, dia, entete = ent, out_dir = tempfile()),
+               "dateObservation, recueil")
+  p <- write_evenements_etat_patient(evt[, names(evt) != "date_observation"], dia, entete = ent,
+                                     out_dir = tempfile())
+  expect_length(hprim_validate(p), 0)
+})

@@ -27,7 +27,7 @@ sinon 2.4. Si renseignée, elle remplace l'attribut.}
 \item{encoding}{Encodage déclaré (\code{"UTF-8"} ou \code{"ISO-8859-1"}) ; les caractères
 hors encodage deviennent des références numériques.}
 
-\item{pretty}{Indentation par tabulations.}
+\item{pretty}{Indentation (deux espaces, mise en forme de libxml2).}
 
 \item{drop_empty}{Supprime éléments et attributs vides (\code{NULL}, \code{NA}, \code{""}),
 sauf les éléments complexes obligatoires du XSD.}
@@ -53,7 +53,8 @@ pyhprimxml (format xmltodict) :
 }
 \details{
 L'ordre des clés n'a pas d'importance : les enfants sont émis dans l'ordre du
-XSD. La sortie est identique, octet pour octet, à celle de \code{to_xml()} en Python.
+XSD. Le document est construit et mis en forme par xml2 (libxml2), comme lxml en Python :
+la sortie est identique, octet pour octet, à celle de \code{to_xml()}.
 }
 \examples{
 f <- system.file("extdata", "pmsi_00001.xml", package = "hprimxml")

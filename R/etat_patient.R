@@ -11,6 +11,18 @@ recueil_tree <- function(e) {
   )
 }
 
+verifier_repere <- function(e) {
+  reperes <- c(intervention = !is.null(g(e, "intervention_id")),
+               dateObservation = !is.null(g(e, "date_observation")),
+               recueil = !is.null(g(e, "recueil_id")) || !is.null(g(e, "recueil_date")))
+  if (sum(reperes) > 1) {
+    stop(sprintf(paste0("\u00c9v\u00e9nement %s : un seul rep\u00e8re possible (intervention, ",
+                        "dateObservation ou recueil), re\u00e7u : %s. La date d'un recueil se donne ",
+                        "dans recueil_date (et recueil_heure)."),
+                 e$evt_id, paste(names(reperes)[reperes], collapse = ", ")), call. = FALSE)
+  }
+}
+
 diagnostic_etat_node <- function(d) {
   node <- list(
     action = g(d, "action", "creation"),
@@ -30,6 +42,7 @@ iter_evenements_etat_patient <- function(evenements, diagnostics = NULL, entete 
   dia <- rows_of(as_table(diagnostics, "diagnostics", c("evt_id", "type", "code"), colmap))
   dia_by <- rows_by(dia, "evt_id")
   lapply(evt, function(e) {
+    verifier_repere(e)
     diags <- dia_by[[as.character(e$evt_id)]] %||% list()
     contenu <- c(root_attrs(entete, e, version), list(
       enteteMessage = entete_tree(entete, e),
