@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<evenementsServeurEtatsPatient xmlns="http://www.hprim.org/hprimXML" version="2.00">
+  <enteteMessage>
+    <identifiantMessage>D1_2</identifiantMessage>
+    <dateHeureProduction>2024-03-10T08:00:00</dateHeureProduction>
+    <emetteur>
+      <agents>
+        <agent categorie="application">
+          <code>DIM</code>
+        </agent>
+      </agents>
+    </emetteur>
+    <destinataire>
+      <agents>
+        <agent categorie="application">
+          <code>DPI</code>
+        </agent>
+      </agents>
+    </destinataire>
+  </enteteMessage>
+  <patient>
+    <identifiant>
+      <emetteur>
+        <valeur>190101337</valeur>
+      </emetteur>
+    </identifiant>
+    <personnePhysique sexe="F">
+      <dateNaissance>
+        <date>1958-03-12</date>
+      </dateNaissance>
+    </personnePhysique>
+  </patient>
+  <venue>
+    <identifiant>
+      <emetteur>
+        <valeur>240000123</valeur>
+      </emetteur>
+    </identifiant>
+    <entree>
+      <dateHeureOptionnelle>
+        <date>2024-03-04</date>
+      </dateHeureOptionnelle>
+    </entree>
+  </venue>
+  <recueil>
+    <identifiant>
+      <emetteur>REC01</emetteur>
+    </identifiant>
+    <date>2024-03-04</date>
+    <uniteFonctionnelle>
+      <code>1201</code>
+    </uniteFonctionnelle>
+  </recueil>
+  <Diagnostics>
+    <diagnostic action="creation" type="da">
+      <dateAction>2024-03-04T12:00:00</dateAction>
+      <codeCim10>E119</codeCim10>
+    </diagnostic>
+  </Diagnostics>
+</evenementsServeurEtatsPatient>

@@ -16,7 +16,8 @@ write_evenements_serveur_actes(
   validate_xsd = "error",
   colmap = NULL,
   identifiant_egal_nom_fichier = TRUE,
-  fichier_ok = FALSE
+  fichier_ok = FALSE,
+  par_acte = FALSE
 )
 }
 \arguments{
@@ -45,6 +46,10 @@ de \code{evenements} (prioritaire).}
 extension (défaut) ; une colonne \code{identifiant_message} contradictoire est une erreur.}
 
 \item{fichier_ok}{Dépose un \code{.ok} vide une fois chaque \code{.xml} écrit intégralement.}
+
+\item{par_acte}{Un message par acte (unité atomique) au lieu d'un par événement. Le
+contexte (patient, venue, intervention) est répété ; \code{evt_id} vaut \verb{\{evt_id\}_\{rang\}}, et le
+gabarit \code{filename} dispose aussi de \code{{evt_origine}}, \code{{rang}} et \code{{acte_id}}.}
 }
 \value{
 Les chemins écrits (invisible).
@@ -55,6 +60,10 @@ Un fichier par événement. \code{evenements} : patient, venue (\code{nda}, \ver
 \code{acte_id}, \code{code}, \code{activite}, \code{phase}, \code{date_execution}, \code{medecin} et en option
 \code{heure_execution}, \code{uf}, \code{medecin_principal}, \code{quantite}, \code{action}, \code{facturable}, \code{valide},
 \code{modificateurs}, \code{extension_pmsi}, \code{extension_documentaire}, \code{association_non_prevue}.
+}
+\details{
+\strong{Unité atomique du serveur d'actes : l'acte} (\code{acteCCAM}), porteur de l'attribut
+\code{action} et d'un identifiant. \code{par_acte = TRUE} écrit un message par acte.
 }
 \examples{
 # Les exemples écrivent dans un dossier temporaire

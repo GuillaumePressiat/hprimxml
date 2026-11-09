@@ -9,7 +9,8 @@ iter_evenements_etat_patient(
   diagnostics = NULL,
   entete = NULL,
   version = NULL,
-  colmap = NULL
+  colmap = NULL,
+  par_diagnostic = FALSE
 )
 }
 \arguments{
@@ -23,6 +24,10 @@ de \code{evenements} (prioritaire).}
 \item{version}{Version du schéma ; sinon \code{entete$version} ou colonne \code{version}, sinon 2.4.}
 
 \item{colmap}{Renommage de colonnes \code{list(ancien = "nouveau")}.}
+
+\item{par_diagnostic}{Un message par diagnostic (unité atomique) au lieu d'un par
+événement. Le contexte (patient, venue, repère) est répété ; \code{evt_id} vaut
+\verb{\{evt_id\}_\{rang\}}, et le gabarit \code{filename} dispose aussi de \code{{evt_origine}} et \code{{rang}}.}
 }
 \description{
 Arbres des messages evenementsServeurEtatsPatient, un par événement

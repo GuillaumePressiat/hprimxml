@@ -9,7 +9,8 @@ iter_evenements_serveur_actes(
   actes,
   entete = NULL,
   version = NULL,
-  colmap = NULL
+  colmap = NULL,
+  par_acte = FALSE
 )
 }
 \arguments{
@@ -23,6 +24,10 @@ de \code{evenements} (prioritaire).}
 \item{version}{Version du schéma ; sinon \code{entete$version} ou colonne \code{version}, sinon 2.4.}
 
 \item{colmap}{Renommage de colonnes \code{list(ancien = "nouveau")}.}
+
+\item{par_acte}{Un message par acte (unité atomique) au lieu d'un par événement. Le
+contexte (patient, venue, intervention) est répété ; \code{evt_id} vaut \verb{\{evt_id\}_\{rang\}}, et le
+gabarit \code{filename} dispose aussi de \code{{evt_origine}}, \code{{rang}} et \code{{acte_id}}.}
 }
 \description{
 Arbres des messages evenementsServeurActes, un par événement

@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<evenementsServeurActes xmlns="http://www.hprim.org/hprimXML" version="2.00">
+  <enteteMessage>
+    <identifiantMessage>A1_ACT03</identifiantMessage>
+    <dateHeureProduction>2024-03-10T08:00:00</dateHeureProduction>
+    <emetteur>
+      <agents>
+        <agent categorie="application">
+          <code>DIM</code>
+        </agent>
+      </agents>
+    </emetteur>
+    <destinataire>
+      <agents>
+        <agent categorie="application">
+          <code>DPI</code>
+        </agent>
+      </agents>
+    </destinataire>
+  </enteteMessage>
+  <evenementServeurActe>
+    <patient>
+      <identifiant>
+        <emetteur>
+          <valeur>190101337</valeur>
+        </emetteur>
+      </identifiant>
+      <personnePhysique sexe="F">
+        <dateNaissance>
+          <date>1958-03-12</date>
+        </dateNaissance>
+      </personnePhysique>
+    </patient>
+    <venue>
+      <identifiant>
+        <emetteur>
+          <valeur>240000123</valeur>
+        </emetteur>
+      </identifiant>
+      <entree>
+        <dateHeureOptionnelle>
+          <date>2024-03-04</date>
+        </dateHeureOptionnelle>
+      </entree>
+    </venue>
+    <intervention>
+      <identifiant>
+        <emetteur>INT0001</emetteur>
+      </identifiant>
+      <uniteFonctionnelle>
+        <code>1201</code>
+      </uniteFonctionnelle>
+    </intervention>
+    <actesCCAM>
+      <acteCCAM action="creation">
+        <identifiant>
+          <emetteur>ACT03</emetteur>
+        </identifiant>
+        <codeActe>YYYY033</codeActe>
+        <codeActivite>1</codeActivite>
+        <codePhase>0</codePhase>
+        <execute>
+          <date>2024-03-04</date>
+        </execute>
+        <executant>
+          <medecins>
+            <medecinExecutant principal="oui">
+              <medecin>
+                <identification>
+                  <code>01234567</code>
+                </identification>
+              </medecin>
+            </medecinExecutant>
+          </medecins>
+        </executant>
+      </acteCCAM>
+    </actesCCAM>
+  </evenementServeurActe>
+</evenementsServeurActes>

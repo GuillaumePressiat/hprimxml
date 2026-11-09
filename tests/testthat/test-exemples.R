@@ -1,7 +1,7 @@
 # Les scripts inst/exemples/*.R produisent exactement les fichiers des scripts Python
 # équivalents (fixtures générées par tools/fixtures_python.py).
 
-for (nom in c("pmsi", "serveur_actes", "etat_patient", "sejour", "diagnostics", "igs2")) {
+for (nom in c("pmsi", "serveur_actes", "etat_patient", "sejour", "diagnostics", "igs2", "atomicite")) {
   test_that(sprintf("exemple %s : fichiers identiques à Python, octet pour octet", nom), {
     x <- executer_exemple(nom)
     ref <- fixture(file.path("exemples", paste0("exemple_", nom)))

@@ -56,7 +56,8 @@ extension (défaut) ; une colonne \code{identifiant_message} contradictoire est 
 Les chemins écrits (invisible).
 }
 \description{
-Un fichier par séjour, ou par RUM avec \code{par_rum = TRUE}. Mêmes tables, mêmes colonnes
+Un fichier par séjour, ou par RUM avec \code{par_rum = TRUE}. \strong{Unité atomique du PMSI : le
+RUM}, seul porteur de l'attribut \code{action} et d'un identifiant. Mêmes tables, mêmes colonnes
 et même sortie (octet pour octet) que \code{write_evenements_pmsi()} du package Python
 pyhprimxml.
 }

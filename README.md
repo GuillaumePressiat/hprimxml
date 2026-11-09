@@ -33,8 +33,9 @@ Et aussi : `hprim_validate()` (contrôle d'un message contre son XSD) et `suivi_
 
 Ce que permet le package :
 
-- **un fichier par séjour, ou par RUM** (`par_rum = TRUE`), pour traiter, corriger et renvoyer
-  chaque RUM séparément ;
+- **des messages atomiques** : un message par unité que le standard sait créer, modifier ou
+  supprimer, le **RUM** (`par_rum = TRUE`), l'**acte** (`par_acte = TRUE`) ou le **diagnostic**
+  (`par_diagnostic = TRUE`), pour traiter, corriger et renvoyer chacune séparément ;
 - **identifiant du message = nom du fichier**, règle contrôlée à l'écriture ;
 - **dépôt sécurisé** : chaque `.xml` est écrit de façon atomique, et un marqueur `.ok` vide est
   déposé une fois le fichier complet (`fichier_ok = TRUE`) ; à la lecture, `exiger_ok = TRUE`
@@ -84,6 +85,110 @@ Tous les exemples écrivent en **version 2.00**, déclarée une fois dans l'en-t
 dernière version publiée ; l'argument `version` d'un appel l'emporte sur l'en-tête.
 
 ## 1. Écriture : des tables vers HPRIM XML
+
+### Atomicité des messages
+
+Chaque type de message a une **unité atomique** : l'objet que le standard sait créer,
+modifier ou supprimer, parce qu'il porte l'attribut `action` et un identifiant. Un message
+atomique transporte une seule de ces unités : il peut être accepté, rejeté ou renvoyé
+indépendamment des autres.
+
+| message | unité atomique | argument |
+|---|---|---|
+| ePMSI (`evenementsPMSI`) | le **RUM** | `par_rum = TRUE` |
+| serveur d'actes (`evenementsServeurActes`) | l'**acte** (`acteCCAM`) | `par_acte = TRUE` |
+| états patient (`evenementsServeurEtatsPatient`) | le **diagnostic** | `par_diagnostic = TRUE` |
+
+Par défaut (`FALSE`), un message porte tout l'événement : le séjour et ses RUM, l'intervention
+et ses actes, l'observation et ses diagnostics. En mode atomique, le contexte (patient, venue…)
+est répété dans chaque message, `evt_id` devient `{evt_id}_{rang}` (`{evt_id}_{rum_id}` pour le
+PMSI), et le gabarit `filename` dispose aussi de `{evt_origine}`, `{rang}` et `{acte_id}`.
+
+Pour le PMSI, les diagnostics et les actes d'un RUM n'ont ni action ni identifiant : un message
+par diagnostic ou par acte n'y aurait pas de sens propre. Pour transmettre des diagnostics un par
+un, le canal naturel est le message états patient ; pour des actes, le serveur d'actes.
+
+Exemple : un séjour à deux RUM, une intervention à trois actes et une observation à deux
+diagnostics, écrits en messages atomiques (`inst/exemples/exemple_atomicite.R`).
+
+
+```r
+# Atomicité : un message par unité atomique, l'objet qui porte l'attribut `action` et un
+# identifiant. Le RUM pour le PMSI, l'acte pour le serveur d'actes, le diagnostic pour les
+# états patient. Le contexte (patient, venue…) est répété dans chaque message.
+library(hprimxml)
+library(tibble)
+
+entete <- list(
+  version = "2.00",                     # version HPRIM XML des messages
+  emetteur = "DIM",
+  destinataire = "DPI",
+  date_heure_production = as.POSIXct("2024-03-10 08:00:00", tz = "UTC")
+)
+# contexte commun : patient et venue
+contexte <- function(evt_id, ...) {
+  tibble(evt_id = evt_id, ipp = "190101337", sexe = "F", date_naissance = as.Date("1958-03-12"),
+         nda = "240000123", venue_date_entree = as.Date("2024-03-04"), ...)
+}
+
+# PMSI : un séjour, deux RUM -> deux messages (par_rum)
+sejours <- contexte("S1")
+rum <- tibble(
+  evt_id = "S1", rum_id = 1:2, rum_emetteur = c("S1_1", "S1_2"),
+  um = c("1201", "3405"), um_date_entree = as.Date(c("2024-03-04", "2024-03-06")),
+  um_mode_entree = c("8", "6"), dp = c("I21.0", "I50.1")
+)
+write_evenements_pmsi(sejours, rum, entete = entete, out_dir = "sortie/rum", par_rum = TRUE)
+
+# Serveur d'actes : une intervention, trois actes -> trois messages (par_acte)
+interventions <- contexte("A1", intervention_id = "INT0001", intervention_uf = "1201")
+actes <- tibble(
+  evt_id = "A1", acte_id = c("ACT01", "ACT02", "ACT03"),
+  code = c("DEQP003", "ZBQK002", "YYYY033"), activite = 1L, phase = 0L,
+  date_execution = as.Date("2024-03-04"), medecin = "01234567"
+)
+write_evenements_serveur_actes(interventions, actes, entete = entete, out_dir = "sortie/actes",
+                               par_acte = TRUE, filename = "{evt_origine}_{acte_id}.xml")
+
+# États patient : une observation, deux diagnostics -> deux messages (par_diagnostic)
+observations <- contexte("D1", recueil_id = "REC01", recueil_date = as.Date("2024-03-04"),
+                         recueil_uf = "1201")
+diagnostics <- tibble(
+  evt_id = "D1", type = c("dp", "da"), code = c("I21.0", "E11.9"),
+  date_action = as.POSIXct("2024-03-04 12:00:00", tz = "UTC")
+)
+write_evenements_etat_patient(observations, diagnostics, entete = entete,
+                              out_dir = "sortie/diagnostics", par_diagnostic = TRUE)
+
+# Bilan : un fichier par unité atomique
+compte <- function(fichier, balise) {
+  x <- paste(readLines(file.path("sortie", fichier), warn = FALSE), collapse = "\n")
+  lengths(regmatches(x, gregexpr(paste0("<", balise), x, fixed = TRUE)))
+}
+fichiers <- sort(list.files("sortie", pattern = "\\.xml$", recursive = TRUE))
+produits <- tibble(
+  fichier = fichiers,
+  RUM = vapply(fichiers, compte, integer(1), balise = "rum ", USE.NAMES = FALSE),
+  actes = vapply(fichiers, compte, integer(1), balise = "acteCCAM", USE.NAMES = FALSE),
+  diagnostics = vapply(fichiers, compte, integer(1), balise = "diagnostic ", USE.NAMES = FALSE)
+)
+```
+
+Les fichiers produits, un par unité atomique :
+
+
+
+|fichier              |RUM |actes |diagnostics |
+|:--------------------|:---|:-----|:-----------|
+|actes/A1_ACT01.xml   |0   |1     |0           |
+|actes/A1_ACT02.xml   |0   |1     |0           |
+|actes/A1_ACT03.xml   |0   |1     |0           |
+|diagnostics/D1_1.xml |0   |0     |1           |
+|diagnostics/D1_2.xml |0   |0     |1           |
+|rum/S1_1.xml         |1   |0     |0           |
+|rum/S1_2.xml         |1   |0     |0           |
+
+
 
 ### Un séjour avec mutation, par séjour puis par RUM
 
@@ -681,7 +786,7 @@ t$evenements; t$rum; t$diagnostics; t$actes
 | `validate_xsd` | `"error"` (défaut), `"warn"`, `FALSE` | contrôle de chaque fichier contre son XSD |
 | `version` | `"2.4"`, `"2.00"`… | version du schéma ; sinon `entete$version`, sinon 2.4 |
 | `filename` | gabarit ou fonction | nom de chaque fichier |
-| `par_rum` | `FALSE` (défaut), `TRUE` | un fichier par RUM |
+| `par_rum`, `par_acte`, `par_diagnostic` | `FALSE` (défaut), `TRUE` | un message par unité atomique : RUM, acte, diagnostic |
 | `fichier_ok` | `FALSE` (défaut), `TRUE` | dépose un `.ok` vide une fois chaque `.xml` complet |
 | `identifiant_egal_nom_fichier` | `TRUE` (défaut), `FALSE` | identifiantMessage = nom du fichier |
 | `colmap` | `list(ancien = "nouveau")` | renommage de colonnes existantes |
@@ -703,6 +808,37 @@ les fichiers d'exemple, pour six variantes d'options.
 Les deux packages écrivent le XML avec libxml2 : lxml en Python, xml2 en R. La structure (ordre
 des éléments, attributs, formats, validation) vient du XSD ; la mise en forme du texte final
 (indentation de deux espaces, échappement, encodage) est celle de libxml2, commune aux deux.
+
+## Versions et releases
+
+Les versions sont publiées comme **releases GitHub** (rien sur le CRAN), par le workflow
+`.github/workflows/release.yaml`, à chaque étiquette de version poussée :
+
+```bash
+git tag 0.2.0+alpha1.0 && git push origin 0.2.0+alpha1.0    # version de test (pré-release)
+git tag v0.2.0 && git push origin v0.2.0                     # version finale
+```
+
+La partie avant `+` doit être la version de `DESCRIPTION` : sinon le workflow s'arrête. Il
+lance ensuite `R CMD check` (tests, exemples, vignettes), construit le `.tar.gz` et l'attache à
+la release, avec des notes générées à partir des commits. Une étiquette avec suffixe donne une
+**pré-release**.
+
+R n'accepte que des chiffres dans un numéro de version : le `.tar.gz` garde la version de
+`DESCRIPTION` (`hprimxml_0.2.0.tar.gz`), et l'étiquette complète est inscrite dans un champ
+dédié, lisible une fois le package installé :
+
+```r
+packageDescription("hprimxml")[["Config/hprimxml/release"]]    # "0.2.0+alpha1.0"
+```
+
+Le `.tar.gz` d'une release contient les **vignettes déjà construites** : l'installer depuis la
+release installe aussi les vignettes. Après l'avoir téléchargé depuis la page de la release
+(ou avec `gh release download 0.2.0+alpha1.0`) :
+
+```r
+install.packages("hprimxml_0.2.0.tar.gz", repos = NULL, type = "source")
+```
 
 ## Documentation
 

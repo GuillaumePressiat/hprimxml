@@ -37,13 +37,11 @@ diagnostic_etat_node <- function(d) {
 #' @inheritParams write_evenements_etat_patient
 #' @export
 iter_evenements_etat_patient <- function(evenements, diagnostics = NULL, entete = NULL, version = NULL,
-                                         colmap = NULL) {
+                                         colmap = NULL, par_diagnostic = FALSE) {
   evt <- rows_of(as_table(evenements, "evenements", c("evt_id", "ipp", "sexe", "date_naissance"), colmap))
   dia <- rows_of(as_table(diagnostics, "diagnostics", c("evt_id", "type", "code"), colmap))
   dia_by <- rows_by(dia, "evt_id")
-  lapply(evt, function(e) {
-    verifier_repere(e)
-    diags <- dia_by[[as.character(e$evt_id)]] %||% list()
+  arbre <- function(e, diags) {
     contenu <- c(root_attrs(entete, e, version), list(
       enteteMessage = entete_tree(entete, e),
       patient = patient_tree(e), venue = venue_tree(e), intervention = intervention_tree(e),
@@ -53,8 +51,21 @@ iter_evenements_etat_patient <- function(evenements, diagnostics = NULL, entete 
       # obligatoire (même vide) en 2.4, facultatif avant : supprimé s'il est vide et facultatif
       divers = named_list()
     ))
-    list(evt = e, tree = list(evenementsServeurEtatsPatient = apply_paths(contenu, e)))
-  })
+    list(evenementsServeurEtatsPatient = apply_paths(contenu, e))
+  }
+  out <- list()
+  for (e in evt) {
+    verifier_repere(e)
+    diags <- dia_by[[as.character(e$evt_id)]] %||% list()
+    if (!par_diagnostic) {
+      out[[length(out) + 1L]] <- list(evt = e, tree = arbre(e, diags))
+      next
+    }
+    for (x in decouper(e, diags)) {
+      out[[length(out) + 1L]] <- list(evt = x$evt, tree = arbre(x$evt, list(x$objet)))
+    }
+  }
+  out
 }
 
 #' Écrire des messages evenementsServeurEtatsPatient depuis des tables
@@ -70,7 +81,14 @@ iter_evenements_etat_patient <- function(evenements, diagnostics = NULL, entete 
 #' Le XSD impose un repère (intervention, dateObservation ou recueil) et un contenu exclusif :
 #' diagnostics, ou IGS2, ou dépendances… En 2.4, un élément `<divers/>` est émis.
 #'
+#' **Unité atomique des états patient (pour les diagnostics) : le diagnostic**, porteur de
+#' l'attribut `action` et d'un identifiant. `par_diagnostic = TRUE` écrit un message par
+#' diagnostic. L'IGS2, unique par message, est atomique par construction.
+#'
 #' @param evenements,diagnostics Tables.
+#' @param par_diagnostic Un message par diagnostic (unité atomique) au lieu d'un par
+#'   événement. Le contexte (patient, venue, repère) est répété ; `evt_id` vaut
+#'   `{evt_id}_{rang}`, et le gabarit `filename` dispose aussi de `{evt_origine}` et `{rang}`.
 #' @inheritParams write_evenements_pmsi
 #' @return Les chemins écrits (invisible).
 #' @examples
@@ -87,8 +105,10 @@ iter_evenements_etat_patient <- function(evenements, diagnostics = NULL, entete 
 write_evenements_etat_patient <- function(evenements, diagnostics = NULL, entete = NULL, out_dir,
                                           filename = "{evt_id}.xml", version = NULL, xmlns = HPRIM_NS,
                                           encoding = "UTF-8", validate_xsd = "error", colmap = NULL,
-                                          identifiant_egal_nom_fichier = TRUE, fichier_ok = FALSE) {
-  trees <- iter_evenements_etat_patient(evenements, diagnostics, entete, version, colmap)
+                                          identifiant_egal_nom_fichier = TRUE, fichier_ok = FALSE,
+                                          par_diagnostic = FALSE) {
+  trees <- iter_evenements_etat_patient(evenements, diagnostics, entete, version, colmap,
+                                        par_diagnostic)
   write_trees(trees, out_dir, filename, xmlns, encoding, validate_xsd, entete,
               identifiant_egal_nom_fichier, fichier_ok)
 }

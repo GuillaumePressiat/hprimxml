@@ -31,22 +31,34 @@ acte_ccam_node <- function(a) {
 #' Arbres des messages evenementsServeurActes, un par événement
 #' @inheritParams write_evenements_serveur_actes
 #' @export
-iter_evenements_serveur_actes <- function(evenements, actes, entete = NULL, version = NULL, colmap = NULL) {
+iter_evenements_serveur_actes <- function(evenements, actes, entete = NULL, version = NULL, colmap = NULL,
+                                          par_acte = FALSE) {
   evt <- rows_of(as_table(evenements, "evenements", c("evt_id", "ipp", "sexe", "date_naissance"), colmap))
   act <- rows_of(as_table(actes, "actes", c("evt_id", "acte_id", "code", "activite", "phase",
                                             "date_execution", "medecin"), colmap))
   act_by <- rows_by(act, "evt_id")
-  lapply(evt, function(e) {
-    acts <- act_by[[as.character(e$evt_id)]] %||% list()
+  arbre <- function(e, acts) {
     evenement <- list(
       patient = patient_tree(e), venue = venue_tree(e), intervention = intervention_tree(e),
       actesCCAM = if (length(acts)) list(acteCCAM = lapply(acts, acte_ccam_node)) else NULL
     )
-    list(evt = e, tree = list(evenementsServeurActes = c(
+    list(evenementsServeurActes = c(
       root_attrs(entete, e, version),
       list(enteteMessage = entete_tree(entete, e), evenementServeurActe = apply_paths(evenement, e))
-    )))
-  })
+    ))
+  }
+  out <- list()
+  for (e in evt) {
+    acts <- act_by[[as.character(e$evt_id)]] %||% list()
+    if (!par_acte) {
+      out[[length(out) + 1L]] <- list(evt = e, tree = arbre(e, acts))
+      next
+    }
+    for (x in decouper(e, acts, extra = function(a) list(acte_id = a$acte_id))) {
+      out[[length(out) + 1L]] <- list(evt = x$evt, tree = arbre(x$evt, list(x$objet)))
+    }
+  }
+  out
 }
 
 #' Écrire des messages evenementsServeurActes (actes CCAM) depuis des tables
@@ -57,7 +69,13 @@ iter_evenements_serveur_actes <- function(evenements, actes, entete = NULL, vers
 #' `heure_execution`, `uf`, `medecin_principal`, `quantite`, `action`, `facturable`, `valide`,
 #' `modificateurs`, `extension_pmsi`, `extension_documentaire`, `association_non_prevue`.
 #'
+#' **Unité atomique du serveur d'actes : l'acte** (`acteCCAM`), porteur de l'attribut
+#' `action` et d'un identifiant. `par_acte = TRUE` écrit un message par acte.
+#'
 #' @param evenements,actes Tables.
+#' @param par_acte Un message par acte (unité atomique) au lieu d'un par événement. Le
+#'   contexte (patient, venue, intervention) est répété ; `evt_id` vaut `{evt_id}_{rang}`, et le
+#'   gabarit `filename` dispose aussi de `{evt_origine}`, `{rang}` et `{acte_id}`.
 #' @inheritParams write_evenements_pmsi
 #' @return Les chemins écrits (invisible).
 #' @examples
@@ -71,8 +89,9 @@ iter_evenements_serveur_actes <- function(evenements, actes, entete = NULL, vers
 write_evenements_serveur_actes <- function(evenements, actes, entete = NULL, out_dir,
                                            filename = "{evt_id}.xml", version = NULL, xmlns = HPRIM_NS,
                                            encoding = "UTF-8", validate_xsd = "error", colmap = NULL,
-                                           identifiant_egal_nom_fichier = TRUE, fichier_ok = FALSE) {
-  trees <- iter_evenements_serveur_actes(evenements, actes, entete, version, colmap)
+                                           identifiant_egal_nom_fichier = TRUE, fichier_ok = FALSE,
+                                           par_acte = FALSE) {
+  trees <- iter_evenements_serveur_actes(evenements, actes, entete, version, colmap, par_acte)
   write_trees(trees, out_dir, filename, xmlns, encoding, validate_xsd, entete,
               identifiant_egal_nom_fichier, fichier_ok)
 }

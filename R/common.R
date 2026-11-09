@@ -181,6 +181,28 @@ root_attrs <- function(entete, evt, version) {
        acquittementAttendu = ent(evt, entete, "acquittement_attendu"))
 }
 
+# ---- atomicité ---------------------------------------------------------------
+
+# Un message par objet atomique (acte, diagnostic) : la ligne d'événement est répétée, avec
+# evt_id = {evt_id}_{rang}, evt_origine (l'evt_id de départ) et rang. Une colonne
+# identifiant_message de l'objet prime sur celle de l'événement.
+decouper <- function(e, objets, extra = NULL) {
+  if (!length(objets)) {
+    warning(sprintf(paste0("\u00c9v\u00e9nement %s : aucun objet \u00e0 \u00e9crire en mode ",
+                           "atomique, ignor\u00e9"), e$evt_id), call. = FALSE)
+  }
+  lapply(seq_along(objets), function(rang) {
+    o <- objets[[rang]]
+    e_o <- e
+    e_o$evt_origine <- e$evt_id
+    e_o$rang <- rang
+    e_o$evt_id <- paste0(e$evt_id, "_", rang)
+    if (!is.null(extra)) e_o <- utils::modifyList(e_o, extra(o))
+    if (!is.null(g(o, "identifiant_message"))) e_o$identifiant_message <- o$identifiant_message
+    list(evt = e_o, objet = o)
+  })
+}
+
 # ---- écriture ---------------------------------------------------------------
 
 fill_template <- function(tpl, row) {

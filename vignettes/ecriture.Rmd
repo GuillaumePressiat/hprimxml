@@ -44,6 +44,39 @@ Les principes sont communs aux trois messages :
 
 Les exemples ci-dessous sont les scripts de `inst/exemples/`, exécutés tels quels.
 
+## Atomicité des messages
+
+Chaque type de message a une **unité atomique** : l'objet que le standard sait créer,
+modifier ou supprimer, parce qu'il porte l'attribut `action` et un identifiant. Un message
+atomique transporte une seule de ces unités : il peut être accepté, rejeté ou renvoyé
+indépendamment des autres.
+
+| message | unité atomique | argument |
+|---|---|---|
+| ePMSI (`evenementsPMSI`) | le **RUM** | `par_rum = TRUE` |
+| serveur d'actes (`evenementsServeurActes`) | l'**acte** (`acteCCAM`) | `par_acte = TRUE` |
+| états patient (`evenementsServeurEtatsPatient`) | le **diagnostic** | `par_diagnostic = TRUE` |
+
+Par défaut (`FALSE`), un message porte tout l'événement : le séjour et ses RUM, l'intervention
+et ses actes, l'observation et ses diagnostics. En mode atomique, le contexte (patient, venue…)
+est répété dans chaque message, `evt_id` devient `{evt_id}_{rang}` (`{evt_id}_{rum_id}` pour le
+PMSI), et le gabarit `filename` dispose aussi de `{evt_origine}`, `{rang}` et `{acte_id}`.
+
+Pour le PMSI, les diagnostics et les actes d'un RUM n'ont ni action ni identifiant : un message
+par diagnostic ou par acte n'y aurait pas de sens propre. Pour transmettre des diagnostics un par
+un, le canal naturel est le message états patient ; pour des actes, le serveur d'actes.
+
+```{r atomicite, code = ex("atomicite")}
+```
+
+```{r, echo = FALSE}
+tab(produits)
+```
+
+Un rejet porte alors sur une seule unité, qu'on corrige et renvoie seule ; une suppression se
+fait en renvoyant l'unité avec `action = "suppression"` (colonne `action` de la table de
+l'unité), le même identifiant d'unité et un nouvel identifiant de message.
+
 ## ePMSI : `write_evenements_pmsi()`
 
 ### Un séjour avec mutation
@@ -199,4 +232,4 @@ d'ictère…) restent celles de votre service.
 | `identifiant_egal_nom_fichier` | `TRUE` (défaut), `FALSE` | identifiantMessage = nom du fichier |
 | `colmap` | `list(ancien = "nouveau")` | renommage de colonnes |
 | `encoding` | `"UTF-8"` (défaut), `"ISO-8859-1"` | encodage des fichiers |
-| `par_rum` (PMSI) | `FALSE` (défaut), `TRUE` | un fichier par RUM |
+| `par_rum` (PMSI), `par_acte` (actes), `par_diagnostic` (états patient) | `FALSE` (défaut), `TRUE` | un message par unité atomique |

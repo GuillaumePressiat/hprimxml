@@ -93,10 +93,14 @@ t$diagnostics
 Les fonctions de lecture renvoient les tables qu'attendent les fonctions d'écriture, avec
 des colonnes typées (`Date`, `POSIXct`, `hms`, entiers). Ce qu'on lit se réécrit tel quel.
 
-## Déposer des RUM unitaires avec leur `.ok`
+## Messages atomiques et dépôts `.ok`
 
-En production, on dépose souvent un fichier par RUM, accompagné d'un marqueur `.ok` vide
-posé une fois le fichier complet. L'identifiant du message est le nom du fichier.
+Chaque message a une **unité atomique**, l'objet qui porte l'attribut `action` : le **RUM**
+pour le PMSI (`par_rum = TRUE`), l'**acte** pour le serveur d'actes (`par_acte = TRUE`), le
+**diagnostic** pour les états patient (`par_diagnostic = TRUE`). Un message atomique peut être
+accepté, rejeté ou renvoyé seul. En production, on dépose souvent un fichier par RUM,
+accompagné d'un marqueur `.ok` vide posé une fois le fichier complet. L'identifiant du message
+est le nom du fichier.
 
 ```{r}
 write_evenements_pmsi(evenements, rum, entete = entete, out_dir = "depot",
@@ -133,6 +137,7 @@ msg$evenementsPMSI$evenementPMSI[[1]]$rss$rum[[1]]$uniteMedicale$code
 | écrire depuis des tables | `write_evenements_pmsi()`, `write_evenements_serveur_actes()`, `write_evenements_etat_patient()` | *Écriture* |
 | relire vers des tables | `read_evenements_pmsi()`, `read_evenements_serveur_actes()`, `read_evenements_etat_patient()` | *Lecture* |
 | contrôler un message | `hprim_validate()`, argument `validate_xsd` | *Validation* |
+| écrire des messages atomiques | arguments `par_rum`, `par_acte`, `par_diagnostic` | *Écriture* |
 | suivre des dépôts | `suivi_depots()`, arguments `fichier_ok` et `exiger_ok` | *Écriture*, *Lecture* |
 | inspecter ou retoucher un message | `iter_evenements_*()`, `hprim_parse_xml()`, `hprim_to_xml()` | *Arbres intermédiaires* |
 

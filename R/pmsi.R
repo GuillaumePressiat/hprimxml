@@ -171,6 +171,7 @@ iter_evenements_pmsi <- function(evenements, rum, diagnostics = NULL, actes = NU
     for (r in rum_by[[k]]) {
       e_rum <- e
       e_rum$rss_id <- e$evt_id
+      e_rum$evt_origine <- e$evt_id
       e_rum$rum_id <- r$rum_id
       e_rum$evt_id <- paste0(k, "_", r$rum_id)
       if (!is.null(g(r, "identifiant_message"))) e_rum$identifiant_message <- r$identifiant_message
@@ -183,7 +184,8 @@ iter_evenements_pmsi <- function(evenements, rum, diagnostics = NULL, actes = NU
 
 #' Écrire des messages evenementsPMSI (RSS MCO) depuis des tables
 #'
-#' Un fichier par séjour, ou par RUM avec `par_rum = TRUE`. Mêmes tables, mêmes colonnes
+#' Un fichier par séjour, ou par RUM avec `par_rum = TRUE`. **Unité atomique du PMSI : le
+#' RUM**, seul porteur de l'attribut `action` et d'un identifiant. Mêmes tables, mêmes colonnes
 #' et même sortie (octet pour octet) que `write_evenements_pmsi()` du package Python
 #' pyhprimxml.
 #'

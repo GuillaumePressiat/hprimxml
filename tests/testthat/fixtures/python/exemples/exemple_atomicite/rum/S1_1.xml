@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<evenementsPMSI xmlns="http://www.hprim.org/hprimXML" version="2.00">
+  <enteteMessage>
+    <identifiantMessage>S1_1</identifiantMessage>
+    <dateHeureProduction>2024-03-10T08:00:00</dateHeureProduction>
+    <emetteur>
+      <agents>
+        <agent categorie="application">
+          <code>DIM</code>
+        </agent>
+      </agents>
+    </emetteur>
+    <destinataire>
+      <agents>
+        <agent categorie="application">
+          <code>DPI</code>
+        </agent>
+      </agents>
+    </destinataire>
+  </enteteMessage>
+  <evenementPMSI>
+    <patient>
+      <identifiant>
+        <emetteur>
+          <valeur>190101337</valeur>
+        </emetteur>
+      </identifiant>
+      <personnePhysique sexe="F">
+        <dateNaissance>
+          <date>1958-03-12</date>
+        </dateNaissance>
+      </personnePhysique>
+    </patient>
+    <venue>
+      <identifiant>
+        <emetteur>
+          <valeur>240000123</valeur>
+        </emetteur>
+      </identifiant>
+      <entree>
+        <dateHeureOptionnelle>
+          <date>2024-03-04</date>
+        </dateHeureOptionnelle>
+      </entree>
+    </venue>
+    <rss>
+      <identifiantRSS/>
+      <rum action="creation">
+        <dateAction>2024-03-04T00:00:00</dateAction>
+        <identifiant>
+          <emetteur>S1_1</emetteur>
+        </identifiant>
+        <uniteMedicale>
+          <code>1201</code>
+          <entree mode="8">
+            <date>2024-03-04</date>
+          </entree>
+        </uniteMedicale>
+        <diagnostics>
+          <diagnosticPrincipal>
+            <codeCim10>I210</codeCim10>
+          </diagnosticPrincipal>
+        </diagnostics>
+      </rum>
+    </rss>
+  </evenementPMSI>
+</evenementsPMSI>

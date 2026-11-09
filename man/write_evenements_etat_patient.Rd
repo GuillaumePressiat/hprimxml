@@ -16,7 +16,8 @@ write_evenements_etat_patient(
   validate_xsd = "error",
   colmap = NULL,
   identifiant_egal_nom_fichier = TRUE,
-  fichier_ok = FALSE
+  fichier_ok = FALSE,
+  par_diagnostic = FALSE
 )
 }
 \arguments{
@@ -45,6 +46,10 @@ de \code{evenements} (prioritaire).}
 extension (défaut) ; une colonne \code{identifiant_message} contradictoire est une erreur.}
 
 \item{fichier_ok}{Dépose un \code{.ok} vide une fois chaque \code{.xml} écrit intégralement.}
+
+\item{par_diagnostic}{Un message par diagnostic (unité atomique) au lieu d'un par
+événement. Le contexte (patient, venue, repère) est répété ; \code{evt_id} vaut
+\verb{\{evt_id\}_\{rang\}}, et le gabarit \code{filename} dispose aussi de \code{{evt_origine}} et \code{{rang}}.}
 }
 \value{
 Les chemins écrits (invisible).
@@ -61,6 +66,10 @@ diagnostic, \code{evt_id}, \code{type} (dp, dr, da, ds, dd, fpc, mm, ae), \code{
 \details{
 Le XSD impose un repère (intervention, dateObservation ou recueil) et un contenu exclusif :
 diagnostics, ou IGS2, ou dépendances… En 2.4, un élément \verb{<divers/>} est émis.
+
+\strong{Unité atomique des états patient (pour les diagnostics) : le diagnostic}, porteur de
+l'attribut \code{action} et d'un identifiant. \code{par_diagnostic = TRUE} écrit un message par
+diagnostic. L'IGS2, unique par message, est atomique par construction.
 }
 \examples{
 # Les exemples écrivent dans un dossier temporaire
