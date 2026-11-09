@@ -1,0 +1,71 @@
+# Release GitHub à chaque étiquette de version : 0.2.0, v0.2.0, ou version de test
+# 0.2.0+alpha1.0, 0.2.0+alpha2.0… Rien n'est publié sur le CRAN.
+#
+# - la partie avant « + » doit être la version de DESCRIPTION ;
+# - une étiquette avec suffixe donne une pré-release GitHub. R n'accepte que des chiffres
+#   dans une version : le .tar.gz garde la version de DESCRIPTION (0.2.0), et l'étiquette
+#   complète est inscrite dans le champ Config/hprimxml/release, lisible une fois installé :
+#   packageDescription("hprimxml")[["Config/hprimxml/release"]]
+#
+# Pour publier : mettre à jour `Version:` dans DESCRIPTION, committer, puis
+#   git tag 0.2.0+alpha1.0 && git push origin 0.2.0+alpha1.0     (version de test)
+#   git tag v0.2.0 && git push origin v0.2.0                      (version finale)
+name: Release
+
+on:
+  push:
+    tags: ["v*", "[0-9]*"]
+
+permissions:
+  contents: write      # créer la release et y attacher les fichiers
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Version de l'étiquette
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"          # 0.2.0+alpha1.0
+          BASE="${TAG%%+*}"                   # 0.2.0
+          VERSION=$(grep '^Version:' DESCRIPTION | awk '{print $2}')
+          if [ "$BASE" != "$VERSION" ]; then
+            echo "::error::L'étiquette $GITHUB_REF_NAME ($BASE) ne correspond pas à la version $VERSION de DESCRIPTION"
+            exit 1
+          fi
+          if [ "$TAG" != "$BASE" ]; then PRE=true; else PRE=false; fi
+          echo "TAG=$TAG" >> "$GITHUB_ENV"
+          echo "PRE=$PRE" >> "$GITHUB_ENV"
+          echo "Version $TAG (pré-release : $PRE)"
+
+      - uses: r-lib/actions/setup-pandoc@v2
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::rcmdcheck
+          needs: check
+
+      - name: R CMD check (tests, exemples, vignettes)
+        uses: r-lib/actions/check-r-package@v2
+        with:
+          error-on: '"error"'
+
+      - name: Construction du .tar.gz
+        run: |
+          # étiquette complète inscrite dans DESCRIPTION (la version R reste numérique)
+          echo "Config/hprimxml/release: $TAG" >> DESCRIPTION
+          R CMD build .
+          ls hprimxml_*.tar.gz
+
+      - name: Release GitHub
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          OPTIONS="--generate-notes"
+          if [ "$PRE" = true ]; then OPTIONS="$OPTIONS --prerelease"; fi
+          gh release create "$GITHUB_REF_NAME" hprimxml_*.tar.gz --title "hprimxml $TAG" $OPTIONS
