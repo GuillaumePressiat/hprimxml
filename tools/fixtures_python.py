@@ -72,6 +72,11 @@ def main() -> None:
         for nom, opts in VARIANTES.items():
             (OUT / f"{src.stem}_{nom}.xml").write_bytes(hx.to_xml(tree, **opts))
     exemples(Path(hx.__file__).resolve().parents[1])
+    # anonymisation des fichiers d'exemple (clé de test), pour le test croisé de hprim_anonymiser()
+    anon = OUT / "anonymes"
+    import shutil
+    shutil.rmtree(anon, ignore_errors=True)
+    hx.anonymiser(sources, anon, graine="graine-de-test")
     print(len(list(OUT.rglob("*.*"))), "fixtures écrites dans", OUT)
 
 

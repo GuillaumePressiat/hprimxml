@@ -20,7 +20,7 @@ test_that("par_acte : un message par acte, contexte répété, relecture", {
     expect_identical(ident(f), tools::file_path_sans_ext(basename(f)))
   }
   t <- read_evenements_serveur_actes(d)
-  expect_identical(t$actes$acte_id, c("X1", "X2", "X3"))
+  expect_identical(t$actes_ccam$acte_id, c("X1", "X2", "X3"))
   expect_identical(t$evenements$intervention_id, rep("INT1", 3))
 })
 

@@ -26,7 +26,7 @@ read_evenements_pmsi(
 \code{dad} dans \code{rum}, la table \code{diagnostics} étant alors vide).}
 }
 \value{
-Liste de tibbles \code{evenements}, \code{rum}, \code{diagnostics}, \code{actes}.
+Liste de tibbles \code{evenements}, \code{rum}, \code{diagnostics}, \code{actes_ccam}.
 }
 \description{
 Inverse de \code{\link[=write_evenements_pmsi]{write_evenements_pmsi()}} : mêmes tables, mêmes colonnes. \code{evt_id} est le nom

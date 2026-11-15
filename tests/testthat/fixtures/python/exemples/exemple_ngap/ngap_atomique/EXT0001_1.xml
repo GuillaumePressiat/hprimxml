@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<evenementsServeurActes xmlns="http://www.hprim.org/hprimXML" version="2.00">
+  <enteteMessage>
+    <identifiantMessage>EXT0001_1</identifiantMessage>
+    <dateHeureProduction>2024-03-10T08:00:00</dateHeureProduction>
+    <emetteur>
+      <agents>
+        <agent categorie="application">
+          <code>DIM</code>
+        </agent>
+      </agents>
+    </emetteur>
+    <destinataire>
+      <agents>
+        <agent categorie="application">
+          <code>DPI</code>
+        </agent>
+      </agents>
+    </destinataire>
+  </enteteMessage>
+  <evenementServeurActe>
+    <patient>
+      <identifiant>
+        <emetteur>
+          <valeur>190101337</valeur>
+        </emetteur>
+      </identifiant>
+      <personnePhysique sexe="F">
+        <dateNaissance>
+          <date>1958-03-12</date>
+        </dateNaissance>
+      </personnePhysique>
+    </patient>
+    <venue>
+      <identifiant>
+        <emetteur>
+          <valeur>240000125</valeur>
+        </emetteur>
+      </identifiant>
+      <entree>
+        <dateHeureOptionnelle>
+          <date>2024-03-08</date>
+        </dateHeureOptionnelle>
+      </entree>
+    </venue>
+    <actesNGAP>
+      <acteNGAP action="creation">
+        <identifiant>
+          <emetteur>NG01</emetteur>
+        </identifiant>
+        <lettreCle>CS</lettreCle>
+        <coefficient>1</coefficient>
+        <execute>
+          <date>2024-03-08</date>
+          <heure>09:30:00</heure>
+        </execute>
+        <prestataire>
+          <medecins>
+            <medecin>
+              <identification>
+                <code>10003456789</code>
+              </identification>
+            </medecin>
+          </medecins>
+          <uniteFonctionnelle>
+            <code>2101</code>
+          </uniteFonctionnelle>
+        </prestataire>
+        <montant>
+          <montantTotal>30.00</montantTotal>
+        </montant>
+      </acteNGAP>
+    </actesNGAP>
+  </evenementServeurActe>
+</evenementsServeurActes>

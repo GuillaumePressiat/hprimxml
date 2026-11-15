@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<evenementsPMSI version="2.00">
+  <enteteMessage>
+    <identifiantMessage>H574920</identifiantMessage>
+    <dateHeureProduction>2024-11-08T08:00:00</dateHeureProduction>
+    <emetteur>
+      <agents>
+        <agent categorie="application">
+          <code>DIM</code>
+        </agent>
+      </agents>
+    </emetteur>
+    <destinataire>
+      <agents>
+        <agent categorie="application">
+          <code>DPI</code>
+        </agent>
+      </agents>
+    </destinataire>
+  </enteteMessage>
+  <evenementPMSI>
+    <patient>
+      <identifiant>
+        <emetteur>
+          <valeur>714992668</valeur>
+        </emetteur>
+      </identifiant>
+      <personnePhysique sexe="F">
+        <nomUsuel>DUPONT</nomUsuel>
+        <prenoms>
+          <prenom>CAROLINE</prenom>
+        </prenoms>
+        <dateNaissance>
+          <date>1958-11-10</date>
+        </dateNaissance>
+      </personnePhysique>
+    </patient>
+    <venue>
+      <identifiant>
+        <emetteur>
+          <valeur>487868840</valeur>
+        </emetteur>
+      </identifiant>
+      <entree>
+        <dateHeureOptionnelle>
+          <date>2024-11-02</date>
+        </dateHeureOptionnelle>
+      </entree>
+    </venue>
+    <rss>
+      <identifiantRSS/>
+      <rum action="creation">
+        <dateAction>2024-11-02T00:00:00</dateAction>
+        <identifiant>
+          <emetteur>M252453_2</emetteur>
+        </identifiant>
+        <medecinResponsable>
+          <noRPPS>43527999314</noRPPS>
+        </medecinResponsable>
+        <uniteMedicale>
+          <code>1201</code>
+          <entree mode="8">
+            <date>2024-11-02</date>
+          </entree>
+        </uniteMedicale>
+        <diagnostics>
+          <diagnosticPrincipal>
+            <codeCim10>I210</codeCim10>
+          </diagnosticPrincipal>
+        </diagnostics>
+      </rum>
+    </rss>
+  </evenementPMSI>
+</evenementsPMSI>

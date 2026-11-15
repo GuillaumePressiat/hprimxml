@@ -56,7 +56,7 @@ diagnostics <- tibble(
 )
 
 # Une ligne par acte CCAM
-actes <- tibble(
+actes_ccam <- tibble(
   evt_id = "00001_pmsi",
   rum_id = c(1L, 1L, 1L, 1L, 2L),
   code = c("EBLA003", "EPLF002", "NFKA006", "YYYY033", "QZRP004"),
@@ -66,7 +66,7 @@ actes <- tibble(
 )
 
 fichiers <- write_evenements_pmsi(
-  evenements, rum, diagnostics, actes,
+  evenements, rum, diagnostics, actes_ccam,
   entete = entete,
   out_dir = "sortie/pmsi",              # -> sortie/pmsi/00001_pmsi.xml
   validate_xsd = "warn"                 # destinataire sans code : non conforme au XSD

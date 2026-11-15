@@ -181,6 +181,26 @@ root_attrs <- function(entete, evt, version) {
        acquittementAttendu = ent(evt, entete, "acquittement_attendu"))
 }
 
+# Codes d'une cellule : vecteur (colonne liste), chaîne séparée par des virgules, ou code seul
+liste_codes <- function(v) {
+  if (is.null(v) || (is.atomic(v) && length(v) == 1 && is.na(v))) return(NULL)
+  if (is.list(v)) v <- unlist(v)
+  if (is.character(v) && length(v) == 1) v <- trimws(strsplit(v, ",", fixed = TRUE)[[1]])
+  v <- v[!is.na(v) & nzchar(trimws(as.character(v)))]
+  if (length(v)) v else NULL
+}
+
+# Ancien nom `actes` : accepté, avec un avertissement, au profit de `actes_ccam`
+ancien_nom_actes <- function(actes_ccam, actes) {
+  if (is.null(actes)) return(actes_ccam)
+  warning("L'argument `actes` est renomm\u00e9 `actes_ccam` ; l'ancien nom sera retir\u00e9 dans une ",
+          "prochaine version.", call. = FALSE)
+  if (!is.null(actes_ccam)) {
+    stop("`actes` et `actes_ccam` d\u00e9signent la m\u00eame table : n'en passer qu'une.", call. = FALSE)
+  }
+  actes
+}
+
 # ---- atomicité ---------------------------------------------------------------
 
 # Un message par objet atomique (acte, diagnostic) : la ligne d'événement est répétée, avec
@@ -268,8 +288,10 @@ write_trees <- function(trees, out_dir, filename, xmlns, encoding, validate_xsd,
     tree[[root]]$enteteMessage <- head
     xml <- tryCatch(
       hprim_to_xml(tree, xmlns = xmlns, encoding = encoding, validate_xsd = validate_xsd),
-      error = function(err) stop(sprintf("\u00c9v\u00e9nement %s : %s", e$evt_id, conditionMessage(err)),
-                                 call. = FALSE)
+      error = function(err) {
+        if (inherits(err, "hprim_schema_error")) stop(err)   # XSD officiel invalide : tel quel
+        stop(sprintf("\u00c9v\u00e9nement %s : %s", e$evt_id, conditionMessage(err)), call. = FALSE)
+      }
     )
     path <- file.path(out_dir, name)
     deposer(path, xml, encoding, fichier_ok)

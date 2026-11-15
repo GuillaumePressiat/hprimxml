@@ -116,10 +116,10 @@ répétable.
 f <- system.file("extdata", "actes_00001.xml", package = "hprimxml")
 msg <- hprim_parse_xml(f)
 evt <- msg$evenementsServeurActes$evenementServeurActe     # un seul événement : pas de [[1]]
-actes <- evt$actesCCAM$acteCCAM                             # liste d'actes
-length(actes)
-actes[[1]]$codeActe
-class(actes[[1]]$execute$date)
+actes_ccam <- evt$actesCCAM$acteCCAM                             # liste d'actes
+length(actes_ccam)
+actes_ccam[[1]]$codeActe
+class(actes_ccam[[1]]$execute$date)
 ```
 
 ## Retoucher un message reçu

@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<evenementsPMSI xmlns="http://www.hprim.org/hprimXML" version="2.00" acquittementAttendu="oui">
+  <enteteMessage modeTraitement="reel">
+    <identifiantMessage>15000_vdfo</identifiantMessage>
+    <dateHeureProduction>2024-09-30T01:01:01</dateHeureProduction>
+    <emetteur>
+      <agents>
+        <agent categorie="application">
+          <code>TEST</code>
+        </agent>
+      </agents>
+    </emetteur>
+    <destinataire>
+      <agents>
+        <agent categorie="application"/>
+      </agents>
+    </destinataire>
+    <commentaireMessage>W &amp; L &lt; B &gt; M "k" 'f' X X X	wse</commentaireMessage>
+  </enteteMessage>
+  <evenementPMSI>
+    <patient confidentiel="a&quot;b&lt;c&gt;&amp;d'e&#9;f&#10;g" anonyme="non">
+      <identifiant>
+        <emetteur>
+          <valeur>114171777</valeur>
+        </emetteur>
+        <recepteur>
+          <valeur>114171777</valeur>
+        </recepteur>
+      </identifiant>
+      <personnePhysique sexe="M">
+        <nomUsuel>RENAULT</nomUsuel>
+        <nomNaissance>AUBERT</nomNaissance>
+        <prenoms>
+          <prenom>LUCAS</prenom>
+        </prenoms>
+        <dateNaissance>
+          <date>1970-10-01</date>
+        </dateNaissance>
+      </personnePhysique>
+    </patient>
+    <venue prive="non">
+      <identifiant>
+        <emetteur>
+          <valeur>416101469</valeur>
+        </emetteur>
+        <recepteur>
+          <valeur>416101469</valeur>
+        </recepteur>
+      </identifiant>
+      <entree>
+        <dateHeureOptionnelle>
+          <date>2024-09-30</date>
+          <heure>08:00:00</heure>
+        </dateHeureOptionnelle>
+        <modeEntree>
+          <code>8</code>
+        </modeEntree>
+        <uniteFonctionnelleResponsable>
+          <code>4321</code>
+        </uniteFonctionnelleResponsable>
+      </entree>
+    </venue>
+    <rss>
+      <identifiantRSS>
+        <emetteur>1</emetteur>
+        <recepteur>598</recepteur>
+      </identifiantRSS>
+      <rum action="creation" classant="non" prestationInterEtablissementA="non">
+        <dateAction>2024-09-30T08:10:00</dateAction>
+        <identifiant>
+          <emetteur>lsem_56911</emetteur>
+          <recepteur>57449</recepteur>
+        </identifiant>
+        <medecinResponsable>
+          <identification>
+            <code>17466811</code>
+          </identification>
+          <personne>
+            <nomUsuel>RIVIERE</nomUsuel>
+            <prenoms>
+              <prenom>SOPHIE</prenom>
+            </prenoms>
+          </personne>
+        </medecinResponsable>
+        <uniteMedicale>
+          <code>4321</code>
+          <entree mode="8">
+            <date>2024-09-30</date>
+            <heure>08:00:00</heure>
+          </entree>
+        </uniteMedicale>
+        <diagnostics>
+          <diagnosticPrincipal>
+            <codeCim10>Z511</codeCim10>
+          </diagnosticPrincipal>
+          <diagnosticRelie>
+            <codeCim10>C10</codeCim10>
+          </diagnosticRelie>
+        </diagnostics>
+        <actes>
+          <acte externe="non">
+            <CCAM remboursementExceptionnel="non">
+              <codeActe>EBLA003</codeActe>
+              <codePhase>0</codePhase>
+              <codeActivite>1</codeActivite>
+              <quantite>1</quantite>
+              <dateRealisation>2024-09-30T08:10:00</dateRealisation>
+            </CCAM>
+          </acte>
+          <acte externe="non">
+            <CCAM remboursementExceptionnel="non">
+              <codeActe>EPLF002</codeActe>
+              <codePhase>0</codePhase>
+              <codeActivite>1</codeActivite>
+              <quantite>1</quantite>
+              <dateRealisation>2024-09-30T08:10:00</dateRealisation>
+            </CCAM>
+          </acte>
+          <acte externe="non">
+            <CCAM remboursementExceptionnel="non">
+              <codeActe>NFKA006</codeActe>
+              <codePhase>0</codePhase>
+              <codeActivite>1</codeActivite>
+              <quantite>1</quantite>
+              <dateRealisation>2024-09-30T08:10:00</dateRealisation>
+            </CCAM>
+          </acte>
+          <acte externe="non">
+            <CCAM remboursementExceptionnel="non">
+              <codeActe>YYYY033</codeActe>
+              <codePhase>0</codePhase>
+              <codeActivite>1</codeActivite>
+              <quantite>1</quantite>
+              <dateRealisation>2024-09-30T08:10:00</dateRealisation>
+            </CCAM>
+          </acte>
+        </actes>
+        <seance/>
+        <radiotherapie typeMachine="" typeDosimetrie="" nombreFaisceau=""/>
+      </rum>
+      <rum action="creation" classant="non" prestationInterEtablissementA="non">
+        <dateAction>2024-09-30T09:00:00</dateAction>
+        <identifiant>
+          <emetteur>lsem_56911</emetteur>
+          <recepteur>32352</recepteur>
+        </identifiant>
+        <medecinResponsable>
+          <identification>
+            <code>17466811</code>
+          </identification>
+          <personne>
+            <nomUsuel>RIVIERE</nomUsuel>
+            <prenoms>
+              <prenom>SOPHIE</prenom>
+            </prenoms>
+          </personne>
+        </medecinResponsable>
+        <uniteMedicale>
+          <code>5000</code>
+          <entree mode="8">
+            <date>2024-09-30</date>
+            <heure>09:00:00</heure>
+          </entree>
+        </uniteMedicale>
+        <diagnostics>
+          <diagnosticPrincipal>
+            <codeCim10>Z743</codeCim10>
+          </diagnosticPrincipal>
+        </diagnostics>
+        <actes>
+          <acte externe="non">
+            <CCAM remboursementExceptionnel="non">
+              <codeActe>QZRP004</codeActe>
+              <codePhase>0</codePhase>
+              <codeActivite>1</codeActivite>
+              <quantite>1</quantite>
+              <dateRealisation>2024-09-30T09:10:00</dateRealisation>
+            </CCAM>
+          </acte>
+        </actes>
+        <seance/>
+        <radiotherapie typeMachine="" typeDosimetrie="" nombreFaisceau=""/>
+      </rum>
+    </rss>
+  </evenementPMSI>
+</evenementsPMSI>

@@ -17,6 +17,13 @@ reference:
   - title: Dépôts .ok
     contents:
       - suivi_depots
+  - title: Anonymisation
+    contents:
+      - hprim_anonymiser
+      - hprim_anonymiser_message
+      - hprim_pseudonyme
+      - hprim_faux_nom
+      - hprim_decalage_jours
   - title: XML, XSD et listes
     contents:
       - hprim_to_xml

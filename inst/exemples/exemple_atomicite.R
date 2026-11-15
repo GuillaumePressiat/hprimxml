@@ -27,12 +27,12 @@ write_evenements_pmsi(sejours, rum, entete = entete, out_dir = "sortie/rum", par
 
 # Serveur d'actes : une intervention, trois actes -> trois messages (par_acte)
 interventions <- contexte("A1", intervention_id = "INT0001", intervention_uf = "1201")
-actes <- tibble(
+actes_ccam <- tibble(
   evt_id = "A1", acte_id = c("ACT01", "ACT02", "ACT03"),
   code = c("DEQP003", "ZBQK002", "YYYY033"), activite = 1L, phase = 0L,
   date_execution = as.Date("2024-03-04"), medecin = "01234567"
 )
-write_evenements_serveur_actes(interventions, actes, entete = entete, out_dir = "sortie/actes",
+write_evenements_serveur_actes(interventions, actes_ccam, entete = entete, out_dir = "sortie/actes",
                                par_acte = TRUE, filename = "{evt_origine}_{acte_id}.xml")
 
 # États patient : une observation, deux diagnostics -> deux messages (par_diagnostic)
@@ -54,6 +54,6 @@ fichiers <- sort(list.files("sortie", pattern = "\\.xml$", recursive = TRUE))
 produits <- tibble(
   fichier = fichiers,
   RUM = vapply(fichiers, compte, integer(1), balise = "rum ", USE.NAMES = FALSE),
-  actes = vapply(fichiers, compte, integer(1), balise = "acteCCAM", USE.NAMES = FALSE),
+  actes_ccam = vapply(fichiers, compte, integer(1), balise = "acteCCAM", USE.NAMES = FALSE),
   diagnostics = vapply(fichiers, compte, integer(1), balise = "diagnostic ", USE.NAMES = FALSE)
 )

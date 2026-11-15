@@ -139,6 +139,8 @@ msg$evenementsPMSI$evenementPMSI[[1]]$rss$rum[[1]]$uniteMedicale$code
 | contrôler un message | `hprim_validate()`, argument `validate_xsd` | *Validation* |
 | écrire des messages atomiques | arguments `par_rum`, `par_acte`, `par_diagnostic` | *Écriture* |
 | suivre des dépôts | `suivi_depots()`, arguments `fichier_ok` et `exiger_ok` | *Écriture*, *Lecture* |
+| actes NGAP (consultations, forfaits, biologie) | argument `actes_ngap`, table `actes_ngap` | *Écriture*, *Lecture* |
+| anonymiser des fichiers pour les tests | `hprim_anonymiser()`, `hprim_pseudonyme()` | *Lecture* |
 | inspecter ou retoucher un message | `iter_evenements_*()`, `hprim_parse_xml()`, `hprim_to_xml()` | *Arbres intermédiaires* |
 
 Le package est le portage R de [pyhprimxml](https://github.com/GuillaumePressiat/pyhprimxml) :

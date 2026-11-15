@@ -6,7 +6,8 @@
 \usage{
 write_evenements_serveur_actes(
   evenements,
-  actes,
+  actes_ccam = NULL,
+  actes_ngap = NULL,
   entete = NULL,
   out_dir,
   filename = "{evt_id}.xml",
@@ -17,11 +18,12 @@ write_evenements_serveur_actes(
   colmap = NULL,
   identifiant_egal_nom_fichier = TRUE,
   fichier_ok = FALSE,
-  par_acte = FALSE
+  par_acte = FALSE,
+  actes = NULL
 )
 }
 \arguments{
-\item{evenements, actes}{Tables.}
+\item{evenements, actes_ccam, actes_ngap}{Tables (\code{actes_ccam} : CCAM ; \code{actes_ngap} : NGAP).}
 
 \item{entete}{Liste : \code{emetteur}, \code{destinataire}, et en option \code{version},
 \code{mode_traitement}, \code{acquittement_attendu}, \code{commentaire}, \code{date_heure_production},
@@ -50,13 +52,15 @@ extension (défaut) ; une colonne \code{identifiant_message} contradictoire est 
 \item{par_acte}{Un message par acte (unité atomique) au lieu d'un par événement. Le
 contexte (patient, venue, intervention) est répété ; \code{evt_id} vaut \verb{\{evt_id\}_\{rang\}}, et le
 gabarit \code{filename} dispose aussi de \code{{evt_origine}}, \code{{rang}} et \code{{acte_id}}.}
+
+\item{actes}{Ancien nom de \code{actes_ccam}, encore accepté avec un avertissement.}
 }
 \value{
 Les chemins écrits (invisible).
 }
 \description{
 Un fichier par événement. \code{evenements} : patient, venue (\code{nda}, \verb{venue_*}), intervention
-(\verb{intervention_*}, \verb{demande_*}). \code{actes} : une ligne par acte CCAM, avec \code{evt_id},
+(\verb{intervention_*}, \verb{demande_*}). \code{actes_ccam} : une ligne par acte CCAM, avec \code{evt_id},
 \code{acte_id}, \code{code}, \code{activite}, \code{phase}, \code{date_execution}, \code{medecin} et en option
 \code{heure_execution}, \code{uf}, \code{medecin_principal}, \code{quantite}, \code{action}, \code{facturable}, \code{valide},
 \code{modificateurs}, \code{extension_pmsi}, \code{extension_documentaire}, \code{association_non_prevue}.
@@ -64,6 +68,13 @@ Un fichier par événement. \code{evenements} : patient, venue (\code{nda}, \ver
 \details{
 \strong{Unité atomique du serveur d'actes : l'acte} (\code{acteCCAM}), porteur de l'attribut
 \code{action} et d'un identifiant. \code{par_acte = TRUE} écrit un message par acte.
+
+\code{actes_ngap} : une ligne par acte NGAP (consultation, forfait technique, biologie), avec
+\code{evt_id}, \code{acte_id}, \code{lettre_cle}, \code{coefficient}, \code{date_execution}, \code{medecin} et en option
+\code{heure_execution}, \code{uf}, \code{quantite}, \code{denombrement}, \code{nabm} (codes NABM : colonne liste ou
+chaîne séparée par des virgules), \code{montant_total}, \code{numero_forfait_technique},
+\code{numero_agrement_appareil}, \code{action}, \code{facturable}, \code{valide}. Un message peut porter des
+actes CCAM, des actes NGAP, ou les deux ; \code{par_acte} découpe les deux.
 }
 \examples{
 # Les exemples écrivent dans un dossier temporaire
@@ -101,7 +112,7 @@ evenements <- tibble(
 )
 
 # Une ligne par acte CCAM
-actes <- tibble(
+actes_ccam <- tibble(
   evt_id = "00001_acte",
   acte_id = c("121212", "121213", "121214", "121215"),
   code = c("EBLA003", "YYYY033", "EPLF002", "NFKA006"),
@@ -113,7 +124,7 @@ actes <- tibble(
 )
 
 fichiers <- write_evenements_serveur_actes(
-  evenements, actes,
+  evenements, actes_ccam,
   entete = entete,
   out_dir = "sortie/actes",             # -> sortie/actes/00001_acte.xml
   validate_xsd = "warn"

@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<evenementsServeurActes xmlns="http://www.hprim.org/hprimXML" version="2.00">
+  <enteteMessage>
+    <identifiantMessage>EXT0001_3</identifiantMessage>
+    <dateHeureProduction>2024-03-10T08:00:00</dateHeureProduction>
+    <emetteur>
+      <agents>
+        <agent categorie="application">
+          <code>DIM</code>
+        </agent>
+      </agents>
+    </emetteur>
+    <destinataire>
+      <agents>
+        <agent categorie="application">
+          <code>DPI</code>
+        </agent>
+      </agents>
+    </destinataire>
+  </enteteMessage>
+  <evenementServeurActe>
+    <patient>
+      <identifiant>
+        <emetteur>
+          <valeur>190101337</valeur>
+        </emetteur>
+      </identifiant>
+      <personnePhysique sexe="F">
+        <dateNaissance>
+          <date>1958-03-12</date>
+        </dateNaissance>
+      </personnePhysique>
+    </patient>
+    <venue>
+      <identifiant>
+        <emetteur>
+          <valeur>240000125</valeur>
+        </emetteur>
+      </identifiant>
+      <entree>
+        <dateHeureOptionnelle>
+          <date>2024-03-08</date>
+        </dateHeureOptionnelle>
+      </entree>
+    </venue>
+    <actesNGAP>
+      <acteNGAP action="creation">
+        <identifiant>
+          <emetteur>NG03</emetteur>
+        </identifiant>
+        <lettreCle>B</lettreCle>
+        <coefficient>26</coefficient>
+        <execute>
+          <date>2024-03-08</date>
+          <heure>11:00:00</heure>
+        </execute>
+        <prestataire>
+          <medecins>
+            <medecin>
+              <identification>
+                <code>10003456789</code>
+              </identification>
+            </medecin>
+          </medecins>
+          <uniteFonctionnelle>
+            <code>5201</code>
+          </uniteFonctionnelle>
+        </prestataire>
+        <NABMs>
+          <code>1104</code>
+          <code>593</code>
+        </NABMs>
+        <montant>
+          <montantTotal>7.02</montantTotal>
+        </montant>
+      </acteNGAP>
+    </actesNGAP>
+  </evenementServeurActe>
+</evenementsServeurActes>

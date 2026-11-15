@@ -31,3 +31,10 @@ test_that("typed = FALSE garde tout en texte", {
   expect_identical(msg$evenementsPMSI$evenementPMSI[[1]]$patient$personnePhysique$dateNaissance$date,
                    "1970-01-01")
 })
+
+test_that("XSD officiel invalide (PMSI 1.06) : erreur explicite, pas de faux diagnostic", {
+  x <- sub('version="2.00"', 'version="1.06"', paste(readLines(ext("pmsi_00001.xml"), warn = FALSE), collapse = "\n"), fixed = TRUE)
+  expect_error(hprim_validate(x), class = "hprim_schema_error")
+  expect_error(hprim_validate(x), "1.06")
+  expect_type(hprim_validate(x, version = "1.05"), "character")
+})

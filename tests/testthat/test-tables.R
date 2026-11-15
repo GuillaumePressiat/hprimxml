@@ -4,7 +4,7 @@ cmp_tables <- function(relu, attendu) {
 
 test_that("PMSI : tables -> XML -> tables", {
   x <- executer_exemple("pmsi")
-  tables <- c("evenements", "rum", "diagnostics", "actes")
+  tables <- c("evenements", "rum", "diagnostics", "actes_ccam")
   t <- read_evenements_pmsi(file.path(x$dir, "sortie", "pmsi"), extra = chemins_extra(x$env, tables))
   for (n in tables) cmp_tables(t[[n]], x$env[[n]])
 })
@@ -12,9 +12,9 @@ test_that("PMSI : tables -> XML -> tables", {
 test_that("serveur d'actes et états patient : tables -> XML -> tables", {
   x <- executer_exemple("serveur_actes")
   t <- read_evenements_serveur_actes(file.path(x$dir, "sortie", "actes"),
-                                     extra = chemins_extra(x$env, c("evenements", "actes")))
+                                     extra = chemins_extra(x$env, c("evenements", "actes_ccam")))
   cmp_tables(t$evenements, x$env$evenements)
-  cmp_tables(t$actes, x$env$actes)
+  cmp_tables(t$actes_ccam, x$env$actes_ccam)
   x <- executer_exemple("etat_patient")
   t <- read_evenements_etat_patient(file.path(x$dir, "sortie", "etat_patient"),
                                     extra = chemins_extra(x$env, c("evenements", "diagnostics")))
@@ -29,7 +29,7 @@ test_that("diagnostics en colonnes : relecture et réécriture identique", {
                             extra = list(rum = "medecinResponsable/noRPPS"))
   expect_identical(t$rum$das, list(c("E119", "I10", "E780"), c("N183", "E119")))
   expect_identical(nrow(t$diagnostics), 0L)
-  p <- write_evenements_pmsi(t$evenements, t$rum, t$diagnostics, t$actes,
+  p <- write_evenements_pmsi(t$evenements, t$rum, t$diagnostics, t$actes_ccam,
                              out_dir = file.path(x$dir, "reecrit"), xmlns = NULL)
   expect_identical(read_bytes(p), read_bytes(file.path(src, "S240001.xml")))
 })
@@ -39,15 +39,15 @@ test_that("règle identifiantMessage = nom de fichier", {
   e <- x$env
   evt <- e$evenements
   evt$identifiant_message <- "AUTRE"
-  expect_error(write_evenements_pmsi(evt, e$rum, e$diagnostics, e$actes, entete = e$entete,
+  expect_error(write_evenements_pmsi(evt, e$rum, e$diagnostics, e$actes_ccam, entete = e$entete,
                                      out_dir = tempfile()), "du nom de fichier")
-  p <- write_evenements_pmsi(evt, e$rum, e$diagnostics, e$actes, entete = e$entete, out_dir = tempfile(),
+  p <- write_evenements_pmsi(evt, e$rum, e$diagnostics, e$actes_ccam, entete = e$entete, out_dir = tempfile(),
                              identifiant_egal_nom_fichier = FALSE)
   expect_match(paste(readLines(p, warn = FALSE), collapse = ""), "<identifiantMessage>AUTRE</identifiantMessage>")
-  expect_error(write_evenements_pmsi(e$evenements, e$rum, e$diagnostics, e$actes, entete = e$entete,
+  expect_error(write_evenements_pmsi(e$evenements, e$rum, e$diagnostics, e$actes_ccam, entete = e$entete,
                                      out_dir = tempfile(), par_rum = TRUE,
                                      filename = "RUM_{nda}_{rum_id}.xml"), "12 caract")
-  expect_error(write_evenements_pmsi(e$evenements, e$rum, e$diagnostics, e$actes, entete = e$entete,
+  expect_error(write_evenements_pmsi(e$evenements, e$rum, e$diagnostics, e$actes_ccam, entete = e$entete,
                                      out_dir = tempfile(), par_rum = TRUE, filename = "RSS.xml"),
                "produit par deux")
 })
@@ -70,7 +70,7 @@ test_that("diagnostics : DP en double refusé", {
   e <- x$env
   rum <- e$rum
   rum$dp <- "I10"
-  expect_error(write_evenements_pmsi(e$evenements, rum, e$diagnostics, e$actes, entete = e$entete,
+  expect_error(write_evenements_pmsi(e$evenements, rum, e$diagnostics, e$actes_ccam, entete = e$entete,
                                      out_dir = tempfile()), "plusieurs DP")
 })
 

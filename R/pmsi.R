@@ -144,14 +144,14 @@ par_cle <- function(rows, key) {
 #' str(arbres[[1]]$tree$evenementsPMSI$evenementPMSI$rss$rum[[1]], max.level = 1)
 #' cat(hprim_to_xml(arbres[[1]]$tree, xmlns = NULL))
 #' @export
-iter_evenements_pmsi <- function(evenements, rum, diagnostics = NULL, actes = NULL, entete = NULL,
+iter_evenements_pmsi <- function(evenements, rum, diagnostics = NULL, actes_ccam = NULL, entete = NULL,
                                  version = NULL, colmap = NULL, par_rum = FALSE) {
   evt <- rows_of(as_table(evenements, "evenements",
                           c("evt_id", "ipp", "nda", "sexe", "date_naissance", "venue_date_entree"), colmap))
   rum_rows <- rows_of(as_table(rum, "rum", c("evt_id", "rum_id", "um", "um_date_entree", "um_mode_entree"),
                                colmap))
   dia <- rows_of(as_table(diagnostics, "diagnostics", c("evt_id", "rum_id", "type", "code"), colmap))
-  act <- rows_of(as_table(actes, "actes", c("evt_id", "rum_id", "code", "phase", "activite"), colmap))
+  act <- rows_of(as_table(actes_ccam, "actes_ccam", c("evt_id", "rum_id", "code", "phase", "activite"), colmap))
   dia <- c(dia, diagnostics_depuis_rum(rum_rows))
 
   rum_by <- rows_by(rum_rows, "evt_id")
@@ -196,12 +196,13 @@ iter_evenements_pmsi <- function(evenements, rum, diagnostics = NULL, actes = NU
 #'   `um_mode_entree`. Diagnostics possibles en colonnes `dp`, `dr`, `das`, `dad` (`das` et
 #'   `dad` : colonne liste ou chaîne séparée par des virgules).
 #' * `diagnostics` : format long, `evt_id`, `rum_id`, `type` (DP, DR, DAS, DAD), `code`.
-#' * `actes` : une ligne par acte CCAM, `evt_id`, `rum_id`, `code`, `phase`, `activite`.
+#' * `actes_ccam` : une ligne par acte CCAM, `evt_id`, `rum_id`, `code`, `phase`, `activite`.
 #'
 #' Toute colonne dont le nom contient `/` ou commence par `@` est une colonne-chemin,
 #' relative au noeud que décrit la table (ex. `patient/@anonyme`, `@classant`).
 #'
-#' @param evenements,rum,diagnostics,actes Tables décrites ci-dessus.
+#' @param evenements,rum,diagnostics,actes_ccam Tables décrites ci-dessus.
+#' @param actes Ancien nom de `actes_ccam`, encore accepté avec un avertissement.
 #' @param entete Liste : `emetteur`, `destinataire`, et en option `version`,
 #'   `mode_traitement`, `acquittement_attendu`, `commentaire`, `date_heure_production`,
 #'   `emetteur_categorie`, `destinataire_categorie`. Chaque clé peut aussi être une colonne
@@ -229,12 +230,13 @@ iter_evenements_pmsi <- function(evenements, rum, diagnostics = NULL, actes = NU
 #' rum_relu
 #' setwd(ancien)
 #' @export
-write_evenements_pmsi <- function(evenements, rum, diagnostics = NULL, actes = NULL, entete = NULL,
+write_evenements_pmsi <- function(evenements, rum, diagnostics = NULL, actes_ccam = NULL, entete = NULL,
                                   out_dir, filename = "{evt_id}.xml", version = NULL, xmlns = HPRIM_NS,
                                   encoding = "UTF-8", validate_xsd = "error", colmap = NULL,
                                   par_rum = FALSE, identifiant_egal_nom_fichier = TRUE,
-                                  fichier_ok = FALSE) {
-  trees <- iter_evenements_pmsi(evenements, rum, diagnostics, actes, entete, version, colmap, par_rum)
+                                  fichier_ok = FALSE, actes = NULL) {
+  actes_ccam <- ancien_nom_actes(actes_ccam, actes)
+  trees <- iter_evenements_pmsi(evenements, rum, diagnostics, actes_ccam, entete, version, colmap, par_rum)
   write_trees(trees, out_dir, filename, xmlns, encoding, validate_xsd, entete,
               identifiant_egal_nom_fichier, fichier_ok)
 }
@@ -270,7 +272,7 @@ DIAG_READ <- c(DP = "diagnostics/diagnosticPrincipal", DR = "diagnostics/diagnos
 #' @param exiger_ok Ne lire que les `.xml` accompagnés de leur `.ok`.
 #' @param format_diagnostics `"long"` (table `diagnostics`) ou `"colonnes"` (`dp`, `dr`, `das`,
 #'   `dad` dans `rum`, la table `diagnostics` étant alors vide).
-#' @return Liste de tibbles `evenements`, `rum`, `diagnostics`, `actes`.
+#' @return Liste de tibbles `evenements`, `rum`, `diagnostics`, `actes_ccam`.
 #' @examples
 #' f <- system.file("extdata", "pmsi_00001.xml", package = "hprimxml")
 #' t <- read_evenements_pmsi(f)
@@ -338,13 +340,13 @@ read_evenements_pmsi <- function(sources, extra = NULL, version = NULL, exiger_o
             association_non_prevue = g(cc, "codeAssociationNonPrevue"),
             remboursement_exceptionnel = g(cc, "remboursementExceptionnel"),
             externe = g(a, "externe")
-          ), extra_cols(a, extra$actes))
+          ), extra_cols(a, extra$actes_ccam %||% extra$actes))
         }
       }
     }
   }
   out <- list(evenements = frame(evts, EVT_COLS_PMSI), rum = frame(rums, RUM_COLS),
-              diagnostics = frame(diags, DIAG_COLS), actes = frame(actes, ACTE_COLS))
+              diagnostics = frame(diags, DIAG_COLS), actes_ccam = frame(actes, ACTE_COLS))
   if (format_diagnostics == "colonnes") {
     d <- out$diagnostics
     cle <- paste(out$rum$evt_id, out$rum$rum_id)

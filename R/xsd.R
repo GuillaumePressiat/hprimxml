@@ -110,7 +110,8 @@ is_complex <- function(s, type_name) {
 
 new_ctype <- function() {
   list(attrs = character(), child_names = character(), child_types = character(),
-       required = character(), repeated = character(), text = FALSE, text_type = NA_character_)
+       required = character(), repeated = character(), text = FALSE, text_type = NA_character_,
+       attr_types = character())
 }
 
 #' Vue d'un type complexe : attributs, enfants ordonnés, obligatoires, répétables
@@ -139,6 +140,7 @@ build_ctype <- function(s, node) {
         if (is_complex(s, base) && dtag == "extension") {
           b <- ctype(s, base)
           ct$attrs <- c(ct$attrs, b$attrs)
+          ct$attr_types <- c(ct$attr_types, b$attr_types)
           ct$child_names <- c(ct$child_names, b$child_names)
           ct$child_types <- c(ct$child_types, b$child_types)
           ct$required <- union(ct$required, b$required)
@@ -190,7 +192,9 @@ collect_one <- function(s, child, ct, optional = FALSE, repeated = FALSE) {
     ct$child_types <- c(ct$child_types, t)
   } else if (tag == "attribute") {
     nm <- xml2::xml_attr(child, "name")
-    ct$attrs <- c(ct$attrs, if (is.na(nm)) local_name(xml2::xml_attr(child, "ref")) else nm)
+    nm <- if (is.na(nm)) local_name(xml2::xml_attr(child, "ref")) else nm
+    ct$attrs <- c(ct$attrs, nm)
+    ct$attr_types[[nm]] <- local_name(xml2::xml_attr(child, "type"))
   } else if (tag == "group") {
     ct <- collect(s, s$groups[[local_name(xml2::xml_attr(child, "ref"))]], ct, optional, repeated)
   } else if (tag == "attributeGroup") {
@@ -205,6 +209,21 @@ KINDS <- c(date = "date", dateTime = "datetime", time = "time",
 
 #' Nature d'un type simple : date, datetime, time, int ou str
 #' @keywords internal
+# Valeurs autorisées d'un type simple (en suivant ses restrictions), ou NULL
+enumeration <- function(s, type_name) {
+  vus <- character()
+  while (!is.null(type_name) && length(type_name) == 1 && !is.na(type_name) &&
+         !is.null(s$stypes[[type_name]]) && !type_name %in% vus) {
+    vus <- c(vus, type_name)
+    r <- xml2::xml_find_first(s$stypes[[type_name]], "xsd:restriction", XSD_NS)
+    if (inherits(r, "xml_missing")) return(NULL)
+    valeurs <- xml2::xml_attr(xml2::xml_find_all(r, "xsd:enumeration", XSD_NS), "value")
+    if (length(valeurs)) return(valeurs)
+    type_name <- local_name(xml2::xml_attr(r, "base"))
+  }
+  NULL
+}
+
 simple_kind <- function(s, type_name) {
   seen <- character()
   while (!is.null(type_name) && !is.na(type_name) && !is.null(s$stypes[[type_name]]) &&
@@ -223,7 +242,19 @@ xml_schema_doc <- function(version, root, namespaced) {
   if (is.null(.cache[[key]])) {
     entry <- hprim_schema(version, root)$entry
     path <- if (namespaced) entry else file.path(dirname(dirname(entry)), "nons", basename(entry))
-    .cache[[key]] <- xml2::read_xml(path)
+    schema <- xml2::read_xml(path)
+    # xml2 ne compile pas un schéma à part : on valide un document témoin ; toute erreur qui
+    # ne porte pas sur ce témoin vient du schéma lui-même (XSD officiel invalide, ex. PMSI 1.06)
+    erreurs <- attr(xml2::xml_validate(xml2::read_xml("<temoin/>"), schema), "errors")
+    erreurs <- erreurs[!grepl("^Element 'temoin'", erreurs)]
+    if (length(erreurs)) {
+      stop(structure(class = c("hprim_schema_error", "error", "condition"), list(
+        message = sprintf(paste0("Le XSD officiel HPRIM %s (%s) n'est pas valide et ne peut pas \u00eatre ",
+                                 "compil\u00e9 : validation impossible avec cette version. D\u00e9tail : %s"),
+                          version, root, erreurs[1]),
+        call = NULL)))
+    }
+    .cache[[key]] <- schema
   }
   .cache[[key]]
 }
@@ -235,7 +266,9 @@ xml_schema_doc <- function(version, root, namespaced) {
 #'
 #' @param x Message : chaîne XML, chemin de fichier, vecteur raw ou document xml2.
 #' @param version Version du schéma ; par défaut l'attribut `version` du message.
-#' @return Vecteur des erreurs, vide si le message est conforme.
+#' @return Vecteur des erreurs, vide si le message est conforme. Si le XSD officiel de la
+#'   version est lui-même invalide (cas du XSD PMSI 1.06), une erreur de classe
+#'   `hprim_schema_error` est levée : la validation est impossible avec cette version.
 #' @examples
 #' f <- system.file("extdata", "pmsi_00001.xml", package = "hprimxml")
 #' hprim_validate(f)

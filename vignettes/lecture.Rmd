@@ -51,7 +51,7 @@ t$evenements[, c("evt_id", "identifiant_message", "ipp", "sexe", "date_naissance
 t$rum[, c("evt_id", "rum_id", "rum_emetteur", "um", "um_date_entree", "um_heure_entree",
           "um_mode_entree", "um_provenance", "um_mode_sortie")]
 t$diagnostics
-t$actes[, c("evt_id", "rum_id", "code", "phase", "activite", "quantite", "date_realisation")]
+t$actes_ccam[, c("evt_id", "rum_id", "code", "phase", "activite", "quantite", "date_realisation")]
 ```
 
 Les colonnes sont typées d'après le XSD :
@@ -125,8 +125,26 @@ f <- system.file("extdata", "actes_00001.xml", package = "hprimxml")
 ta <- read_evenements_serveur_actes(f)
 ta$evenements[, c("evt_id", "ipp", "nom_usuel", "nda", "intervention_id",
                   "intervention_date_debut", "intervention_uf")]
-merge(ta$actes[, c("evt_id", "acte_id", "code", "date_execution", "medecin")],
+merge(ta$actes_ccam[, c("evt_id", "acte_id", "code", "date_execution", "medecin")],
       ta$evenements[, c("evt_id", "ipp", "nda")], by = "evt_id")
+```
+
+### Actes NGAP
+
+Les actes NGAP sont relus dans une table `actes_ngap`, à côté de la table `actes_ccam` (CCAM) ; les
+codes NABM y sont une colonne liste.
+
+```{r}
+ngap <- tibble::tibble(evt_id = "EXT0001", acte_id = c("NG01", "NG03"), lettre_cle = c("CS", "B"),
+                       coefficient = c("1", "26"), date_execution = as.Date("2024-03-08"),
+                       medecin = "10003456789", nabm = list(NULL, c(1104L, 593L)))
+ctx <- tibble::tibble(evt_id = "EXT0001", ipp = "190101337", sexe = "F",
+                      date_naissance = as.Date("1958-03-12"))
+write_evenements_serveur_actes(ctx, actes_ngap = ngap, entete = list(emetteur = "DIM", destinataire = "DPI"),
+                               out_dir = "ngap")
+tn <- read_evenements_serveur_actes("ngap")$actes_ngap
+tn[, c("acte_id", "lettre_cle", "coefficient", "nabm")]
+tn$nabm
 ```
 
 ## États patient : `read_evenements_etat_patient()`
@@ -152,6 +170,27 @@ ti <- read_evenements_etat_patient("sortie/igs2", extra = list(evenements = chem
 ti$evenements[, c("evt_id", "recueil_id", "recueil_date", "recueil_uf", chemins)]
 ```
 
+## Anonymiser des fichiers reçus
+
+Pour tester sur de vrais fichiers sans manipuler de données identifiantes,
+`hprim_anonymiser()` les réécrit sous une forme conforme au XSD, avec une transformation
+aléatoire propre à chaque fichier : faux noms et prénoms plausibles (le prénom selon le sexe),
+identifiants masqués au même format, dates décalées d'un même nombre de jours, codes et
+attributs intacts.
+
+```{r}
+f <- system.file("extdata", "pmsi_00001.xml", package = "hprimxml")
+a <- hprim_anonymiser(f, out_dir = "anonymes", graine = "vignette")  # graine : résultat reproductible
+basename(a)
+avant <- read_evenements_pmsi(f)$evenements
+apres <- read_evenements_pmsi(a)$evenements
+rbind(avant[, c("ipp", "nom_usuel", "prenom", "date_naissance", "nda", "sexe")],
+      apres[, c("ipp", "nom_usuel", "prenom", "date_naissance", "nda", "sexe")])
+```
+
+Ce n'est pas une anonymisation au sens du RGPD : les fichiers restent des données de santé,
+où codes rares, durées ou unités peuvent permettre des recoupements. Usage : tests locaux.
+
 ## Fichiers d'autres producteurs
 
 Les fichiers reçus ne sont pas toujours conformes au XSD. La lecture n'impose aucune
@@ -169,7 +208,7 @@ fichier (`pmsi_00001.xml`). Pour les réécrire à l'identique, on désactive la
 identifiant = nom de fichier :
 
 ```{r}
-p <- write_evenements_pmsi(tp$evenements, tp$rum, tp$diagnostics, tp$actes,
+p <- write_evenements_pmsi(tp$evenements, tp$rum, tp$diagnostics, tp$actes_ccam,
                            out_dir = "reecrit", validate_xsd = FALSE,
                            identifiant_egal_nom_fichier = FALSE)
 basename(p)

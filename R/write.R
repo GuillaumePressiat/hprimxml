@@ -53,6 +53,24 @@ is_repeat <- function(v) {
     (is.atomic(v) && length(v) > 1)
 }
 
+ACCENTS_DE <- "\u00e0\u00e2\u00e4\u00e9\u00e8\u00ea\u00eb\u00ee\u00ef\u00f4\u00f6\u00f9\u00fb\u00fc\u00e7\u00c0\u00c2\u00c4\u00c9\u00c8\u00ca\u00cb\u00ce\u00cf\u00d4\u00d6\u00d9\u00db\u00dc\u00c7"
+ACCENTS_VERS <- "aaaeeeeiioouuucAAAEEEEIIOOUUUC"
+
+# Forme du XSD d'une valeur énumérée, aux accents près : si `texte` n'est pas autorisé mais
+# qu'une seule valeur autorisée lui correspond aux accents près, c'est elle qui est renvoyée.
+accorder_enumeration <- function(texte, valeurs) {
+  if (is.null(valeurs) || texte %in% valeurs) return(texte)
+  cle <- chartr(ACCENTS_DE, ACCENTS_VERS, enc2utf8(texte))
+  candidats <- valeurs[chartr(ACCENTS_DE, ACCENTS_VERS, enc2utf8(valeurs)) == cle]
+  if (length(candidats) == 1) candidats else texte
+}
+
+# Vide, ou liste dont tout le contenu est vide
+vide_profond <- function(v) {
+  if (is.list(v)) return(all(vapply(v, vide_profond, logical(1))))
+  is_empty(v)
+}
+
 is_empty <- function(v) {
   if (is.null(v) || length(v) == 0) return(TRUE)
   if (is.atomic(v) && length(v) == 1) {
@@ -96,7 +114,8 @@ build_el <- function(w, name, value, type_name, path, required = FALSE) {
   el <- list(name = name, attrs = character(), text = NULL, children = list(), simple = !complex)
   if (!complex) {
     if (is_node(value)) stop(sprintf("%s : valeur simple attendue, liste nomm\u00e9e re\u00e7ue", path), call. = FALSE)
-    el$text <- if (is_empty(value)) "" else format_value(value, type_name)
+    el$text <- if (is_empty(value)) "" else accorder_enumeration(format_value(value, type_name),
+                                                                 enumeration(s, type_name))
     return(el)
   }
   ct <- ctype(s, type_name)
@@ -115,13 +134,15 @@ build_el <- function(w, name, value, type_name, path, required = FALSE) {
     used <- c(used, k)
     v <- value[[k]]
     if (w$drop_empty && is_empty(v)) next
-    el$attrs[[a]] <- if (is_empty(v)) "" else format_value(v)
+    el$attrs[[a]] <- if (is_empty(v)) "" else accorder_enumeration(format_value(v),
+                                                                   enumeration(s, ct$attr_types[[a]] %||% NA))
   }
   if (ct$text && "#text" %in% names(value)) {
     used <- c(used, "#text")
     v <- value[["#text"]]
     if (!is_empty(v) || !w$drop_empty) {
-      el$text <- if (is_empty(v)) "" else format_value(v, ct$text_type)
+      el$text <- if (is_empty(v)) "" else accorder_enumeration(format_value(v, ct$text_type),
+                                                               enumeration(s, ct$text_type))
       el$simple <- TRUE
     }
   }
@@ -138,6 +159,9 @@ build_el <- function(w, name, value, type_name, path, required = FALSE) {
     }
   }
   unknown <- setdiff(names(value), c(used, "@xmlns", "xmlns", ""))
+  # une clé vide n'est pas « inconnue » : elle ne serait pas écrite (ex. une colonne facultative
+  # propre à une version plus récente, laissée vide)
+  unknown <- unknown[!vapply(unknown, function(k) vide_profond(value[[k]]), logical(1))]
   if (length(unknown)) {
     msg <- sprintf("%s : cl\u00e9s inconnues du XSD %s : %s", path, s$version,
                    paste(unknown, collapse = ", "))

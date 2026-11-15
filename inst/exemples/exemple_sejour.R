@@ -51,7 +51,7 @@ diagnostics <- tibble(
 )
 
 # Une ligne par acte CCAM
-actes <- tibble(
+actes_ccam <- tibble(
   evt_id = "S240001",
   rum_id = c(1L, 1L, 2L),
   code = c("DEQP003", "ZBQK002", "DEQP003"),
@@ -62,14 +62,14 @@ actes <- tibble(
 
 # Un fichier par séjour : sortie/sejour/S240001.xml
 write_evenements_pmsi(
-  evenements, rum, diagnostics, actes,
+  evenements, rum, diagnostics, actes_ccam,
   entete = entete, out_dir = "sortie/sejour", xmlns = NULL
 )
 
 # RUM unitaires, avec marqueur de dépôt complet :
 # sortie/rum/S240001_1.xml puis S240001_1.ok, sortie/rum/S240001_2.xml puis S240001_2.ok
 write_evenements_pmsi(
-  evenements, rum, diagnostics, actes,
+  evenements, rum, diagnostics, actes_ccam,
   entete = entete, out_dir = "sortie/rum", xmlns = NULL, par_rum = TRUE, fichier_ok = TRUE
 )
 

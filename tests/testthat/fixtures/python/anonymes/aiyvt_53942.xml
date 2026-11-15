@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<evenementsServeurActes xmlns="http://www.hprim.org/hprimXML" version="2.00" acquittementAttendu="oui">
+  <enteteMessage>
+    <identifiantMessage>70774_afko</identifiantMessage>
+    <dateHeureProduction>2024-12-16T01:01:01</dateHeureProduction>
+    <emetteur>
+      <agents>
+        <agent categorie="application">
+          <code>TEST</code>
+        </agent>
+      </agents>
+    </emetteur>
+    <destinataire>
+      <agents>
+        <agent categorie="application"/>
+      </agents>
+    </destinataire>
+    <commentaireMessage>WUCWJ-HAHL</commentaireMessage>
+  </enteteMessage>
+  <evenementServeurActe>
+    <patient>
+      <identifiant>
+        <emetteur>
+          <valeur>435437830</valeur>
+        </emetteur>
+        <recepteur>
+          <valeur>435437830</valeur>
+        </recepteur>
+      </identifiant>
+      <personnePhysique sexe="M">
+        <nomUsuel>BERTRAND</nomUsuel>
+        <prenoms>
+          <prenom>GERARD</prenom>
+        </prenoms>
+        <dateNaissance>
+          <date>1970-12-17</date>
+        </dateNaissance>
+      </personnePhysique>
+    </patient>
+    <venue prive="non">
+      <identifiant>
+        <emetteur>
+          <valeur>861942228</valeur>
+        </emetteur>
+        <recepteur>
+          <valeur>861942228</valeur>
+        </recepteur>
+      </identifiant>
+      <entree>
+        <dateHeureOptionnelle>
+          <date>2024-12-16</date>
+          <heure>08:00:00</heure>
+        </dateHeureOptionnelle>
+        <uniteFonctionnelleResponsable>
+          <code>4321</code>
+        </uniteFonctionnelleResponsable>
+      </entree>
+    </venue>
+    <intervention>
+      <identifiant>
+        <emetteur>014951109947</emetteur>
+      </identifiant>
+      <debut>
+        <date>2024-12-16</date>
+        <heure>08:10:00</heure>
+      </debut>
+      <fin>
+        <date>2024-12-16</date>
+        <heure>09:00:00</heure>
+      </fin>
+      <uniteFonctionnelle>
+        <code>4321</code>
+      </uniteFonctionnelle>
+      <demande>
+        <datePrescription>
+          <date>2024-12-09</date>
+          <heure>02:30:00</heure>
+        </datePrescription>
+        <uniteFonctionnelle>
+          <code>4321</code>
+        </uniteFonctionnelle>
+      </demande>
+    </intervention>
+    <actesCCAM>
+      <acteCCAM action="creation" facturable="oui" valide="oui">
+        <identifiant>
+          <emetteur>473133</emetteur>
+        </identifiant>
+        <codeActe>EBLA003</codeActe>
+        <codeActivite>1</codeActivite>
+        <codePhase>0</codePhase>
+        <execute>
+          <date>2024-12-16</date>
+          <heure>08:10:00</heure>
+        </execute>
+        <executant>
+          <medecins>
+            <medecinExecutant principal="oui">
+              <medecin>
+                <identification>
+                  <code>93799067</code>
+                </identification>
+              </medecin>
+            </medecinExecutant>
+          </medecins>
+          <uniteFonctionnelle>
+            <code>4321</code>
+          </uniteFonctionnelle>
+        </executant>
+        <quantite>1</quantite>
+        <radiotherapie typeMachine="" typeDosimetrie="" nombreFaisceau=""/>
+      </acteCCAM>
+      <acteCCAM action="creation" facturable="oui" valide="oui">
+        <identifiant>
+          <emetteur>410342</emetteur>
+        </identifiant>
+        <codeActe>YYYY033</codeActe>
+        <codeActivite>1</codeActivite>
+        <codePhase>0</codePhase>
+        <execute>
+          <date>2024-12-16</date>
+          <heure>08:10:00</heure>
+        </execute>
+        <executant>
+          <medecins>
+            <medecinExecutant principal="oui">
+              <medecin>
+                <identification>
+                  <code>93799067</code>
+                </identification>
+              </medecin>
+            </medecinExecutant>
+          </medecins>
+          <uniteFonctionnelle>
+            <code>4321</code>
+          </uniteFonctionnelle>
+        </executant>
+        <quantite>1</quantite>
+        <radiotherapie typeMachine="" typeDosimetrie="" nombreFaisceau=""/>
+      </acteCCAM>
+      <acteCCAM action="creation" facturable="oui" valide="oui">
+        <identifiant>
+          <emetteur>256967</emetteur>
+        </identifiant>
+        <codeActe>EPLF002</codeActe>
+        <codeActivite>1</codeActivite>
+        <codePhase>0</codePhase>
+        <execute>
+          <date>2024-12-16</date>
+          <heure>08:10:00</heure>
+        </execute>
+        <executant>
+          <medecins>
+            <medecinExecutant principal="oui">
+              <medecin>
+                <identification>
+                  <code>93799067</code>
+                </identification>
+              </medecin>
+            </medecinExecutant>
+          </medecins>
+          <uniteFonctionnelle>
+            <code>4321</code>
+          </uniteFonctionnelle>
+        </executant>
+        <quantite>1</quantite>
+        <radiotherapie typeMachine="" typeDosimetrie="" nombreFaisceau=""/>
+      </acteCCAM>
+      <acteCCAM action="creation" facturable="oui" valide="oui">
+        <identifiant>
+          <emetteur>757739</emetteur>
+        </identifiant>
+        <codeActe>NFKA006</codeActe>
+        <codeActivite>1</codeActivite>
+        <codePhase>0</codePhase>
+        <execute>
+          <date>2024-12-16</date>
+          <heure>08:10:00</heure>
+        </execute>
+        <executant>
+          <medecins>
+            <medecinExecutant principal="oui">
+              <medecin>
+                <identification>
+                  <code>93799067</code>
+                </identification>
+              </medecin>
+            </medecinExecutant>
+          </medecins>
+          <uniteFonctionnelle>
+            <code>4321</code>
+          </uniteFonctionnelle>
+        </executant>
+        <quantite>1</quantite>
+        <radiotherapie typeMachine="" typeDosimetrie="" nombreFaisceau=""/>
+      </acteCCAM>
+    </actesCCAM>
+  </evenementServeurActe>
+</evenementsServeurActes>

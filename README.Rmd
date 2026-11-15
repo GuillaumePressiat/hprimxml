@@ -42,12 +42,13 @@ le vérifient sur tous les exemples ci-dessous.
 | Message | Écriture | Lecture |
 |---|---|---|
 | `evenementsPMSI` (RSS MCO) | `write_evenements_pmsi()` | `read_evenements_pmsi()` |
-| `evenementsServeurActes` (actes CCAM) | `write_evenements_serveur_actes()` | `read_evenements_serveur_actes()` |
+| `evenementsServeurActes` (actes CCAM et NGAP) | `write_evenements_serveur_actes()` | `read_evenements_serveur_actes()` |
 | `evenementsServeurEtatsPatient` (diagnostics, IGS2…) | `write_evenements_etat_patient()` | `read_evenements_etat_patient()` |
 | Tout message HPRIM XML, sous forme de liste | `hprim_to_xml()`, `hprim_write_xml()` | `hprim_parse_xml()` |
 
-Et aussi : `hprim_validate()` (contrôle d'un message contre son XSD) et `suivi_depots()`
-(état des dépôts : quels `.xml` ont leur marqueur `.ok`).
+Et aussi : `hprim_validate()` (contrôle d'un message contre son XSD), `suivi_depots()`
+(état des dépôts : quels `.xml` ont leur marqueur `.ok`) et `hprim_anonymiser()`
+(pseudonymisation de fichiers pour des tests locaux).
 
 Ce que permet le package :
 
@@ -65,6 +66,11 @@ Ce que permet le package :
 - **validation XSD** de chaque fichier écrit, en mode erreur par défaut ;
 - **colonnes-chemins** (`` `patient/@anonyme` ``, `` `medecinResponsable/noRPPS` ``…) pour
   atteindre n'importe quel élément du XSD ;
+- **actes NGAP** (consultations, forfaits techniques, biologie avec codes NABM) à côté des
+  actes CCAM dans le serveur d'actes ;
+- **anonymisation locale** de fichiers réels pour les tests : faux noms plausibles,
+  identifiants masqués, dates décalées, une transformation aléatoire par fichier, fichiers
+  toujours conformes au XSD ;
 - **relecture** vers les mêmes tables, avec des colonnes typées (`Date`, `POSIXct`, `hms`,
   entiers).
 
@@ -96,7 +102,7 @@ aussi livrés dans le package : `list.files(system.file("exemples", package = "h
 remotes::install_github("GuillaumePressiat/hprimxml", build_vignettes = TRUE)
 ```
 
-Dépendances : `xml2`, `hms`, `tibble`.
+Dépendances : `xml2`, `hms`, `tibble`, `openssl` (pour l'anonymisation).
 
 Tous les exemples écrivent en **version 2.00**, déclarée une fois dans l'en-tête
 (`entete <- list(version = "2.00", ...)`). Sans précision, le package écrit en 2.4, la
@@ -170,10 +176,10 @@ retiré à l'écriture.
 tab(diagnostics)
 ```
 
-**`actes`** : une ligne par acte CCAM ; `quantite` vaut 1 par défaut.
+**`actes_ccam`** : une ligne par acte CCAM ; `quantite` vaut 1 par défaut.
 
 ```{r, echo = FALSE}
-tab(actes)
+tab(actes_ccam)
 ```
 
 Les RUM relus, diagnostics en colonnes (`rum_relu`) :
@@ -205,6 +211,29 @@ par défaut, `{evt_id}_{rum_id}.xml` avec `par_rum = TRUE`, ou le nom produit pa
 contradictoire fait échouer l'écriture ; le XSD limite l'identifiant à 12 caractères (lettres,
 chiffres, `-`, `,`, `_`) ; deux messages de même nom font échouer l'écriture.
 `identifiant_egal_nom_fichier = FALSE` rend identifiant et nom de fichier indépendants.
+
+### Actes NGAP : consultations, forfaits techniques, biologie
+
+Un message serveur d'actes peut aussi porter des actes NGAP, seuls ou à côté des actes CCAM :
+table `actes_ngap`, une ligne par acte, passée par l'argument `actes_ngap` (la table `actes_ccam`
+devient alors facultative). Colonnes obligatoires : `evt_id`, `acte_id`, `lettre_cle`,
+`coefficient`, `date_execution`, `medecin` ; facultatives : `heure_execution`, `uf`,
+`quantite`, `denombrement`, `nabm` (codes NABM : colonne liste ou chaîne séparée par des
+virgules), `montant_total`, `numero_forfait_technique`, `numero_agrement_appareil` (forfaits
+techniques), `action`, `facturable`, `valide`. Le reste passe par des colonnes-chemins
+relatives à `acteNGAP`. Chaque acte NGAP porte sa propre action : avec `par_acte = TRUE`, les
+actes CCAM puis NGAP d'un événement donnent chacun un message.
+
+Exemple (lettres-clés et codes illustratifs) :
+
+```{r ngap, code = ex("ngap")}
+```
+
+La table `actes_ngap` relue :
+
+```{r, echo = FALSE}
+tab(relu)
+```
 
 ### États patient : IGS2 détaillé
 
@@ -251,7 +280,7 @@ les mêmes tables (tibbles), avec les mêmes noms de colonnes.
 
 ```r
 t <- read_evenements_pmsi("dossier/")          # fichier(s), dossier, motif glob
-t$evenements; t$rum; t$diagnostics; t$actes
+t$evenements; t$rum; t$diagnostics; t$actes_ccam
 ```
 
 - **lecture guidée par le XSD** : un élément répétable est toujours une liste, même unique ;
@@ -262,6 +291,37 @@ t$evenements; t$rum; t$diagnostics; t$actes
 - `extra = list(rum = "@classant")` : colonnes-chemins supplémentaires ;
 - `format_diagnostics = "colonnes"` : `dp`, `dr`, `das`, `dad` dans `rum` ;
 - `exiger_ok = TRUE` : ne lire que les dépôts terminés.
+
+### Anonymiser des fichiers pour les tests
+
+`hprim_anonymiser()` réécrit un lot de fichiers HPRIM XML sous une forme pseudonymisée,
+conforme au XSD comme l'original, pour tester sur de vrais fichiers sans manipuler de données
+identifiantes :
+
+- **chaque fichier reçoit sa propre transformation aléatoire** : rien ne relie deux fichiers
+  anonymisés ; à l'intérieur d'un fichier, une même valeur donne le même remplacement partout ;
+- **noms et prénoms** (patient, professionnels) sont remplacés par des noms français plausibles
+  (faker), le prénom selon le sexe du patient ;
+- **les identifiants**, les adresses et les commentaires sont remplacés par des valeurs de même
+  longueur et de même nature ;
+- **toutes les dates** d'un fichier sont décalées d'un même nombre de jours, tiré au hasard ;
+- **les codes et les attributs** ne sont pas touchés (CIM-10, CCAM, NGAP, UM, sexe, modes…) ;
+- **le nom de fichier** est pseudonymisé comme l'identifiant du message, et un `.ok` est
+  reproduit.
+
+L'argument `graine` rend le résultat reproductible ; il ne sert qu'à la doc et aux tests. À
+graine égale, les fichiers produits sont identiques, octet pour octet, à ceux de
+`anonymiser()` dans pyhprimxml.
+
+```{r anonymisation, code = ex("anonymisation")}
+```
+
+```{r, echo = FALSE}
+tab(avant_apres)
+```
+
+Ce n'est pas une anonymisation au sens du RGPD : les fichiers restent des données de santé,
+où codes rares, durées ou unités peuvent permettre des recoupements. Usage : tests locaux.
 
 ## Options d'écriture
 
@@ -300,8 +360,8 @@ Les versions sont publiées comme **releases GitHub** (rien sur le CRAN), par le
 `.github/workflows/release.yaml`, à chaque étiquette de version poussée :
 
 ```bash
-git tag 0.2.0+alpha1.0 && git push origin 0.2.0+alpha1.0    # version de test (pré-release)
-git tag v0.2.0 && git push origin v0.2.0                     # version finale
+git tag 0.3.0+alpha1.0 && git push origin 0.3.0+alpha1.0    # version de test (pré-release)
+git tag v0.3.0 && git push origin v0.3.0                     # version finale
 ```
 
 La partie avant `+` doit être la version de `DESCRIPTION` : sinon le workflow s'arrête. Il
@@ -310,19 +370,19 @@ la release, avec des notes générées à partir des commits. Une étiquette ave
 **pré-release**.
 
 R n'accepte que des chiffres dans un numéro de version : le `.tar.gz` garde la version de
-`DESCRIPTION` (`hprimxml_0.2.0.tar.gz`), et l'étiquette complète est inscrite dans un champ
+`DESCRIPTION` (`hprimxml_0.3.0.tar.gz`), et l'étiquette complète est inscrite dans un champ
 dédié, lisible une fois le package installé :
 
 ```r
-packageDescription("hprimxml")[["Config/hprimxml/release"]]    # "0.2.0+alpha1.0"
+packageDescription("hprimxml")[["Config/hprimxml/release"]]    # "0.3.0+alpha1.0"
 ```
 
 Le `.tar.gz` d'une release contient les **vignettes déjà construites** : l'installer depuis la
 release installe aussi les vignettes. Après l'avoir téléchargé depuis la page de la release
-(ou avec `gh release download 0.2.0+alpha1.0`) :
+(ou avec `gh release download 0.3.0+alpha1.0`) :
 
 ```r
-install.packages("hprimxml_0.2.0.tar.gz", repos = NULL, type = "source")
+install.packages("hprimxml_0.3.0.tar.gz", repos = NULL, type = "source")
 ```
 
 ## Documentation
@@ -334,3 +394,26 @@ Pages par `.github/workflows/pkgdown.yaml`, qui vérifie au passage que ce READM
 knitr::knit("README.Rmd")        # après toute modification d'un exemple
 pkgdown::build_site()
 ```
+
+## Licence
+
+```
+hprimxml, R package to interact with French HPRIM XML interoperability standards
+Copyright (C) 2024-2026 Guillaume Pressiat
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published
+by the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+```
+
+Le texte complet de la licence est dans le fichier [LICENSE.md](LICENSE.md).
+

@@ -8,7 +8,7 @@ write_evenements_pmsi(
   evenements,
   rum,
   diagnostics = NULL,
-  actes = NULL,
+  actes_ccam = NULL,
   entete = NULL,
   out_dir,
   filename = "{evt_id}.xml",
@@ -19,11 +19,12 @@ write_evenements_pmsi(
   colmap = NULL,
   par_rum = FALSE,
   identifiant_egal_nom_fichier = TRUE,
-  fichier_ok = FALSE
+  fichier_ok = FALSE,
+  actes = NULL
 )
 }
 \arguments{
-\item{evenements, rum, diagnostics, actes}{Tables décrites ci-dessus.}
+\item{evenements, rum, diagnostics, actes_ccam}{Tables décrites ci-dessus.}
 
 \item{entete}{Liste : \code{emetteur}, \code{destinataire}, et en option \code{version},
 \code{mode_traitement}, \code{acquittement_attendu}, \code{commentaire}, \code{date_heure_production},
@@ -51,6 +52,8 @@ dispose aussi de \code{{rss_id}} et \code{{rum_id}}.}
 extension (défaut) ; une colonne \code{identifiant_message} contradictoire est une erreur.}
 
 \item{fichier_ok}{Dépose un \code{.ok} vide une fois chaque \code{.xml} écrit intégralement.}
+
+\item{actes}{Ancien nom de \code{actes_ccam}, encore accepté avec un avertissement.}
 }
 \value{
 Les chemins écrits (invisible).
@@ -70,7 +73,7 @@ Tables (data.frame ou tibble) :
 \code{um_mode_entree}. Diagnostics possibles en colonnes \code{dp}, \code{dr}, \code{das}, \code{dad} (\code{das} et
 \code{dad} : colonne liste ou chaîne séparée par des virgules).
 \item \code{diagnostics} : format long, \code{evt_id}, \code{rum_id}, \code{type} (DP, DR, DAS, DAD), \code{code}.
-\item \code{actes} : une ligne par acte CCAM, \code{evt_id}, \code{rum_id}, \code{code}, \code{phase}, \code{activite}.
+\item \code{actes_ccam} : une ligne par acte CCAM, \code{evt_id}, \code{rum_id}, \code{code}, \code{phase}, \code{activite}.
 }
 
 Toute colonne dont le nom contient \code{/} ou commence par \code{@} est une colonne-chemin,
@@ -132,7 +135,7 @@ diagnostics <- tibble(
 )
 
 # Une ligne par acte CCAM
-actes <- tibble(
+actes_ccam <- tibble(
   evt_id = "S240001",
   rum_id = c(1L, 1L, 2L),
   code = c("DEQP003", "ZBQK002", "DEQP003"),
@@ -143,14 +146,14 @@ actes <- tibble(
 
 # Un fichier par séjour : sortie/sejour/S240001.xml
 write_evenements_pmsi(
-  evenements, rum, diagnostics, actes,
+  evenements, rum, diagnostics, actes_ccam,
   entete = entete, out_dir = "sortie/sejour", xmlns = NULL
 )
 
 # RUM unitaires, avec marqueur de dépôt complet :
 # sortie/rum/S240001_1.xml puis S240001_1.ok, sortie/rum/S240001_2.xml puis S240001_2.ok
 write_evenements_pmsi(
-  evenements, rum, diagnostics, actes,
+  evenements, rum, diagnostics, actes_ccam,
   entete = entete, out_dir = "sortie/rum", xmlns = NULL, par_rum = TRUE, fichier_ok = TRUE
 )
 

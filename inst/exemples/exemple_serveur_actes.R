@@ -31,7 +31,7 @@ evenements <- tibble(
 )
 
 # Une ligne par acte CCAM
-actes <- tibble(
+actes_ccam <- tibble(
   evt_id = "00001_acte",
   acte_id = c("121212", "121213", "121214", "121215"),
   code = c("EBLA003", "YYYY033", "EPLF002", "NFKA006"),
@@ -43,7 +43,7 @@ actes <- tibble(
 )
 
 fichiers <- write_evenements_serveur_actes(
-  evenements, actes,
+  evenements, actes_ccam,
   entete = entete,
   out_dir = "sortie/actes",             # -> sortie/actes/00001_acte.xml
   validate_xsd = "warn"

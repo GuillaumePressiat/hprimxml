@@ -12,7 +12,9 @@ hprim_validate(x, version = NULL)
 \item{version}{Version du schéma ; par défaut l'attribut \code{version} du message.}
 }
 \value{
-Vecteur des erreurs, vide si le message est conforme.
+Vecteur des erreurs, vide si le message est conforme. Si le XSD officiel de la
+version est lui-même invalide (cas du XSD PMSI 1.06), une erreur de classe
+\code{hprim_schema_error} est levée : la validation est impossible avec cette version.
 }
 \description{
 La variante de schéma (avec ou sans namespace) est choisie d'après le

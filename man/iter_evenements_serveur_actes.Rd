@@ -6,7 +6,8 @@
 \usage{
 iter_evenements_serveur_actes(
   evenements,
-  actes,
+  actes_ccam = NULL,
+  actes_ngap = NULL,
   entete = NULL,
   version = NULL,
   colmap = NULL,
@@ -14,7 +15,7 @@ iter_evenements_serveur_actes(
 )
 }
 \arguments{
-\item{evenements, actes}{Tables.}
+\item{evenements, actes_ccam, actes_ngap}{Tables (\code{actes_ccam} : CCAM ; \code{actes_ngap} : NGAP).}
 
 \item{entete}{Liste : \code{emetteur}, \code{destinataire}, et en option \code{version},
 \code{mode_traitement}, \code{acquittement_attendu}, \code{commentaire}, \code{date_heure_production},

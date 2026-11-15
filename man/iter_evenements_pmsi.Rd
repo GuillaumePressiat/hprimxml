@@ -8,7 +8,7 @@ iter_evenements_pmsi(
   evenements,
   rum,
   diagnostics = NULL,
-  actes = NULL,
+  actes_ccam = NULL,
   entete = NULL,
   version = NULL,
   colmap = NULL,
@@ -16,7 +16,7 @@ iter_evenements_pmsi(
 )
 }
 \arguments{
-\item{evenements, rum, diagnostics, actes}{Tables décrites ci-dessus.}
+\item{evenements, rum, diagnostics, actes_ccam}{Tables décrites ci-dessus.}
 
 \item{entete}{Liste : \code{emetteur}, \code{destinataire}, et en option \code{version},
 \code{mode_traitement}, \code{acquittement_attendu}, \code{commentaire}, \code{date_heure_production},

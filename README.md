@@ -24,12 +24,13 @@ le vérifient sur tous les exemples ci-dessous.
 | Message | Écriture | Lecture |
 |---|---|---|
 | `evenementsPMSI` (RSS MCO) | `write_evenements_pmsi()` | `read_evenements_pmsi()` |
-| `evenementsServeurActes` (actes CCAM) | `write_evenements_serveur_actes()` | `read_evenements_serveur_actes()` |
+| `evenementsServeurActes` (actes CCAM et NGAP) | `write_evenements_serveur_actes()` | `read_evenements_serveur_actes()` |
 | `evenementsServeurEtatsPatient` (diagnostics, IGS2…) | `write_evenements_etat_patient()` | `read_evenements_etat_patient()` |
 | Tout message HPRIM XML, sous forme de liste | `hprim_to_xml()`, `hprim_write_xml()` | `hprim_parse_xml()` |
 
-Et aussi : `hprim_validate()` (contrôle d'un message contre son XSD) et `suivi_depots()`
-(état des dépôts : quels `.xml` ont leur marqueur `.ok`).
+Et aussi : `hprim_validate()` (contrôle d'un message contre son XSD), `suivi_depots()`
+(état des dépôts : quels `.xml` ont leur marqueur `.ok`) et `hprim_anonymiser()`
+(pseudonymisation de fichiers pour des tests locaux).
 
 Ce que permet le package :
 
@@ -47,6 +48,11 @@ Ce que permet le package :
 - **validation XSD** de chaque fichier écrit, en mode erreur par défaut ;
 - **colonnes-chemins** (`` `patient/@anonyme` ``, `` `medecinResponsable/noRPPS` ``…) pour
   atteindre n'importe quel élément du XSD ;
+- **actes NGAP** (consultations, forfaits techniques, biologie avec codes NABM) à côté des
+  actes CCAM dans le serveur d'actes ;
+- **anonymisation locale** de fichiers réels pour les tests : faux noms plausibles,
+  identifiants masqués, dates décalées, une transformation aléatoire par fichier, fichiers
+  toujours conformes au XSD ;
 - **relecture** vers les mêmes tables, avec des colonnes typées (`Date`, `POSIXct`, `hms`,
   entiers).
 
@@ -78,7 +84,7 @@ aussi livrés dans le package : `list.files(system.file("exemples", package = "h
 remotes::install_github("GuillaumePressiat/hprimxml", build_vignettes = TRUE)
 ```
 
-Dépendances : `xml2`, `hms`, `tibble`.
+Dépendances : `xml2`, `hms`, `tibble`, `openssl` (pour l'anonymisation).
 
 Tous les exemples écrivent en **version 2.00**, déclarée une fois dans l'en-tête
 (`entete <- list(version = "2.00", ...)`). Sans précision, le package écrit en 2.4, la
@@ -142,12 +148,12 @@ write_evenements_pmsi(sejours, rum, entete = entete, out_dir = "sortie/rum", par
 
 # Serveur d'actes : une intervention, trois actes -> trois messages (par_acte)
 interventions <- contexte("A1", intervention_id = "INT0001", intervention_uf = "1201")
-actes <- tibble(
+actes_ccam <- tibble(
   evt_id = "A1", acte_id = c("ACT01", "ACT02", "ACT03"),
   code = c("DEQP003", "ZBQK002", "YYYY033"), activite = 1L, phase = 0L,
   date_execution = as.Date("2024-03-04"), medecin = "01234567"
 )
-write_evenements_serveur_actes(interventions, actes, entete = entete, out_dir = "sortie/actes",
+write_evenements_serveur_actes(interventions, actes_ccam, entete = entete, out_dir = "sortie/actes",
                                par_acte = TRUE, filename = "{evt_origine}_{acte_id}.xml")
 
 # États patient : une observation, deux diagnostics -> deux messages (par_diagnostic)
@@ -169,7 +175,7 @@ fichiers <- sort(list.files("sortie", pattern = "\\.xml$", recursive = TRUE))
 produits <- tibble(
   fichier = fichiers,
   RUM = vapply(fichiers, compte, integer(1), balise = "rum ", USE.NAMES = FALSE),
-  actes = vapply(fichiers, compte, integer(1), balise = "acteCCAM", USE.NAMES = FALSE),
+  actes_ccam = vapply(fichiers, compte, integer(1), balise = "acteCCAM", USE.NAMES = FALSE),
   diagnostics = vapply(fichiers, compte, integer(1), balise = "diagnostic ", USE.NAMES = FALSE)
 )
 ```
@@ -178,15 +184,15 @@ Les fichiers produits, un par unité atomique :
 
 
 
-|fichier              |RUM |actes |diagnostics |
-|:--------------------|:---|:-----|:-----------|
-|actes/A1_ACT01.xml   |0   |1     |0           |
-|actes/A1_ACT02.xml   |0   |1     |0           |
-|actes/A1_ACT03.xml   |0   |1     |0           |
-|diagnostics/D1_1.xml |0   |0     |1           |
-|diagnostics/D1_2.xml |0   |0     |1           |
-|rum/S1_1.xml         |1   |0     |0           |
-|rum/S1_2.xml         |1   |0     |0           |
+|fichier              |RUM |actes_ccam |diagnostics |
+|:--------------------|:---|:----------|:-----------|
+|actes/A1_ACT01.xml   |0   |1          |0           |
+|actes/A1_ACT02.xml   |0   |1          |0           |
+|actes/A1_ACT03.xml   |0   |1          |0           |
+|diagnostics/D1_1.xml |0   |0          |1           |
+|diagnostics/D1_2.xml |0   |0          |1           |
+|rum/S1_1.xml         |1   |0          |0           |
+|rum/S1_2.xml         |1   |0          |0           |
 
 
 
@@ -252,7 +258,7 @@ diagnostics <- tibble(
 )
 
 # Une ligne par acte CCAM
-actes <- tibble(
+actes_ccam <- tibble(
   evt_id = "S240001",
   rum_id = c(1L, 1L, 2L),
   code = c("DEQP003", "ZBQK002", "DEQP003"),
@@ -263,14 +269,14 @@ actes <- tibble(
 
 # Un fichier par séjour : sortie/sejour/S240001.xml
 write_evenements_pmsi(
-  evenements, rum, diagnostics, actes,
+  evenements, rum, diagnostics, actes_ccam,
   entete = entete, out_dir = "sortie/sejour", xmlns = NULL
 )
 
 # RUM unitaires, avec marqueur de dépôt complet :
 # sortie/rum/S240001_1.xml puis S240001_1.ok, sortie/rum/S240001_2.xml puis S240001_2.ok
 write_evenements_pmsi(
-  evenements, rum, diagnostics, actes,
+  evenements, rum, diagnostics, actes_ccam,
   entete = entete, out_dir = "sortie/rum", xmlns = NULL, par_rum = TRUE, fichier_ok = TRUE
 )
 
@@ -320,7 +326,7 @@ retiré à l'écriture.
 
 
 
-**`actes`** : une ligne par acte CCAM ; `quantite` vaut 1 par défaut.
+**`actes_ccam`** : une ligne par acte CCAM ; `quantite` vaut 1 par défaut.
 
 
 
@@ -515,6 +521,82 @@ par défaut, `{evt_id}_{rum_id}.xml` avec `par_rum = TRUE`, ou le nom produit pa
 contradictoire fait échouer l'écriture ; le XSD limite l'identifiant à 12 caractères (lettres,
 chiffres, `-`, `,`, `_`) ; deux messages de même nom font échouer l'écriture.
 `identifiant_egal_nom_fichier = FALSE` rend identifiant et nom de fichier indépendants.
+
+### Actes NGAP : consultations, forfaits techniques, biologie
+
+Un message serveur d'actes peut aussi porter des actes NGAP, seuls ou à côté des actes CCAM :
+table `actes_ngap`, une ligne par acte, passée par l'argument `actes_ngap` (la table `actes_ccam`
+devient alors facultative). Colonnes obligatoires : `evt_id`, `acte_id`, `lettre_cle`,
+`coefficient`, `date_execution`, `medecin` ; facultatives : `heure_execution`, `uf`,
+`quantite`, `denombrement`, `nabm` (codes NABM : colonne liste ou chaîne séparée par des
+virgules), `montant_total`, `numero_forfait_technique`, `numero_agrement_appareil` (forfaits
+techniques), `action`, `facturable`, `valide`. Le reste passe par des colonnes-chemins
+relatives à `acteNGAP`. Chaque acte NGAP porte sa propre action : avec `par_acte = TRUE`, les
+actes CCAM puis NGAP d'un événement donnent chacun un message.
+
+Exemple (lettres-clés et codes illustratifs) :
+
+
+```r
+# Actes NGAP dans un message serveur d'actes : une consultation, un forfait technique et un
+# acte de biologie avec ses codes NABM. Lettres-clés, coefficients, codes et montants sont
+# illustratifs : à remplacer par ceux de vos référentiels.
+library(hprimxml)
+library(tibble)
+
+entete <- list(
+  version = "2.00",                     # version HPRIM XML des messages
+  emetteur = "DIM",
+  destinataire = "DPI",
+  date_heure_production = as.POSIXct("2024-03-10 08:00:00", tz = "UTC")
+)
+
+# Contexte : une ligne par événement (patient, venue)
+evenements <- tibble(
+  evt_id = "EXT0001",
+  ipp = "190101337", sexe = "F", date_naissance = as.Date("1958-03-12"),
+  nda = "240000125", venue_date_entree = as.Date("2024-03-08")
+)
+
+# Actes NGAP : une ligne par acte
+actes_ngap <- tibble(
+  evt_id = "EXT0001",
+  acte_id = c("NG01", "NG02", "NG03"),
+  lettre_cle = c("CS", "FTN", "B"),               # consultation, forfait technique, biologie
+  coefficient = c("1", "1", "26"),
+  date_execution = as.Date("2024-03-08"),
+  heure_execution = hms::as_hms(c("09:30:00", "10:15:00", "11:00:00")),
+  medecin = "10003456789",
+  uf = c("2101", "3301", "5201"),
+  montant_total = c("30.00", "70.00", "7.02"),    # montants en euros (illustratifs)
+  numero_forfait_technique = c(NA, "1", NA),      # forfait technique
+  numero_agrement_appareil = c(NA, "12345678901234", NA),
+  nabm = list(NULL, NULL, c(1104L, 593L))         # codes NABM de l'acte de biologie
+)
+
+# Un message avec les trois actes : sortie/ngap/EXT0001.xml
+write_evenements_serveur_actes(evenements, actes_ngap = actes_ngap, entete = entete,
+                               out_dir = "sortie/ngap")
+
+# Un message par acte (unité atomique) : sortie/ngap_atomique/EXT0001_1.xml… _3.xml
+write_evenements_serveur_actes(evenements, actes_ngap = actes_ngap, entete = entete,
+                               out_dir = "sortie/ngap_atomique", par_acte = TRUE)
+
+# Relecture : la table actes_ngap, codes NABM compris
+relu <- read_evenements_serveur_actes("sortie/ngap")$actes_ngap
+```
+
+La table `actes_ngap` relue :
+
+
+
+|evt_id  |acte_id |lettre_cle |coefficient |quantite |denombrement |date_execution |heure_execution |medecin     |uf   |nabm        |montant_total |numero_forfait_technique |numero_agrement_appareil |action   |facturable |valide |
+|:-------|:-------|:----------|:-----------|:--------|:------------|:--------------|:---------------|:-----------|:----|:-----------|:-------------|:------------------------|:------------------------|:--------|:----------|:------|
+|EXT0001 |NG01    |CS         |1           |         |             |2024-03-08     |09:30:00        |10003456789 |2101 |[]          |30.00         |                         |                         |creation |           |       |
+|EXT0001 |NG02    |FTN        |1           |         |             |2024-03-08     |10:15:00        |10003456789 |3301 |[]          |70.00         |1                        |12345678901234           |creation |           |       |
+|EXT0001 |NG03    |B          |26          |         |             |2024-03-08     |11:00:00        |10003456789 |5201 |[1104, 593] |7.02          |                         |                         |creation |           |       |
+
+
 
 ### États patient : IGS2 détaillé
 
@@ -766,7 +848,7 @@ les mêmes tables (tibbles), avec les mêmes noms de colonnes.
 
 ```r
 t <- read_evenements_pmsi("dossier/")          # fichier(s), dossier, motif glob
-t$evenements; t$rum; t$diagnostics; t$actes
+t$evenements; t$rum; t$diagnostics; t$actes_ccam
 ```
 
 - **lecture guidée par le XSD** : un élément répétable est toujours une liste, même unique ;
@@ -777,6 +859,98 @@ t$evenements; t$rum; t$diagnostics; t$actes
 - `extra = list(rum = "@classant")` : colonnes-chemins supplémentaires ;
 - `format_diagnostics = "colonnes"` : `dp`, `dr`, `das`, `dad` dans `rum` ;
 - `exiger_ok = TRUE` : ne lire que les dépôts terminés.
+
+### Anonymiser des fichiers pour les tests
+
+`hprim_anonymiser()` réécrit un lot de fichiers HPRIM XML sous une forme pseudonymisée,
+conforme au XSD comme l'original, pour tester sur de vrais fichiers sans manipuler de données
+identifiantes :
+
+- **chaque fichier reçoit sa propre transformation aléatoire** : rien ne relie deux fichiers
+  anonymisés ; à l'intérieur d'un fichier, une même valeur donne le même remplacement partout ;
+- **noms et prénoms** (patient, professionnels) sont remplacés par des noms français plausibles
+  (faker), le prénom selon le sexe du patient ;
+- **les identifiants**, les adresses et les commentaires sont remplacés par des valeurs de même
+  longueur et de même nature ;
+- **toutes les dates** d'un fichier sont décalées d'un même nombre de jours, tiré au hasard ;
+- **les codes et les attributs** ne sont pas touchés (CIM-10, CCAM, NGAP, UM, sexe, modes…) ;
+- **le nom de fichier** est pseudonymisé comme l'identifiant du message, et un `.ok` est
+  reproduit.
+
+L'argument `graine` rend le résultat reproductible ; il ne sert qu'à la doc et aux tests. À
+graine égale, les fichiers produits sont identiques, octet pour octet, à ceux de
+`anonymiser()` dans pyhprimxml.
+
+
+```r
+# Anonymiser des fichiers HPRIM XML pour des tests locaux : identifiants et noms
+# pseudonymisés (même longueur, même nature de caractères), dates décalées d'un même nombre
+# de jours, codes médicaux et attributs intacts.
+library(hprimxml)
+library(tibble)
+
+entete <- list(
+  version = "2.00",                     # version HPRIM XML des messages
+  emetteur = "DIM",
+  destinataire = "DPI",
+  date_heure_production = as.POSIXct("2024-03-10 08:00:00", tz = "UTC")
+)
+evenements <- tibble(
+  evt_id = "S240001", ipp = "190101337", sexe = "F",
+  nom_usuel = "MARTIN", prenom = "JEANNE", date_naissance = as.Date("1958-03-12"),
+  nda = "240000123", venue_date_entree = as.Date("2024-03-04")
+)
+rum <- tibble(
+  evt_id = "S240001", rum_id = 1L, rum_emetteur = "S240001_1", um = "1201",
+  um_date_entree = as.Date("2024-03-04"), um_mode_entree = "8", dp = "I21.0",
+  `medecinResponsable/noRPPS` = "10003456789"
+)
+write_evenements_pmsi(evenements, rum, entete = entete, out_dir = "sortie/original", xmlns = NULL,
+                      fichier_ok = TRUE)
+
+# Anonymisation : chaque fichier reçoit sa propre transformation aléatoire. La graine ne sert
+# qu'à rendre cet exemple reproductible (doc, tests) ; en pratique, on l'omet.
+anonymes <- hprim_anonymiser("sortie/original", "sortie/anonyme", graine = "exemple")
+
+# Avant / après, à partir des tables relues
+extra <- list(rum = "medecinResponsable/noRPPS")
+avant <- read_evenements_pmsi("sortie/original", extra = extra)
+apres <- read_evenements_pmsi("sortie/anonyme", extra = extra)
+champs <- list(
+  evenements = c("evt_id", "ipp", "nom_usuel", "prenom", "sexe", "date_naissance", "nda",
+                 "venue_date_entree"),
+  rum = c("rum_emetteur", "um", "um_date_entree", "medecinResponsable/noRPPS"),
+  diagnostics = "code"
+)
+avant_apres <- do.call(rbind, lapply(names(champs), function(t) {
+  tibble(champ = champs[[t]],
+         original = vapply(champs[[t]], function(c) format(avant[[t]][[c]][1]), ""),
+         anonymise = vapply(champs[[t]], function(c) format(apres[[t]][[c]][1]), ""))
+}))
+```
+
+
+
+|champ                     |original    |anonymise   |
+|:-------------------------|:-----------|:-----------|
+|evt_id                    |S240001     |H574920     |
+|ipp                       |190101337   |714992668   |
+|nom_usuel                 |MARTIN      |DUPONT      |
+|prenom                    |JEANNE      |CAROLINE    |
+|sexe                      |F           |F           |
+|date_naissance            |1958-03-12  |1958-11-10  |
+|nda                       |240000123   |487868840   |
+|venue_date_entree         |2024-03-04  |2024-11-02  |
+|rum_emetteur              |S240001_1   |M252453_2   |
+|um                        |1201        |1201        |
+|um_date_entree            |2024-03-04  |2024-11-02  |
+|medecinResponsable/noRPPS |10003456789 |43527999314 |
+|code                      |I210        |I210        |
+
+
+
+Ce n'est pas une anonymisation au sens du RGPD : les fichiers restent des données de santé,
+où codes rares, durées ou unités peuvent permettre des recoupements. Usage : tests locaux.
 
 ## Options d'écriture
 
@@ -815,8 +989,8 @@ Les versions sont publiées comme **releases GitHub** (rien sur le CRAN), par le
 `.github/workflows/release.yaml`, à chaque étiquette de version poussée :
 
 ```bash
-git tag 0.2.0+alpha1.0 && git push origin 0.2.0+alpha1.0    # version de test (pré-release)
-git tag v0.2.0 && git push origin v0.2.0                     # version finale
+git tag 0.3.0+alpha1.0 && git push origin 0.3.0+alpha1.0    # version de test (pré-release)
+git tag v0.3.0 && git push origin v0.3.0                     # version finale
 ```
 
 La partie avant `+` doit être la version de `DESCRIPTION` : sinon le workflow s'arrête. Il
@@ -825,19 +999,19 @@ la release, avec des notes générées à partir des commits. Une étiquette ave
 **pré-release**.
 
 R n'accepte que des chiffres dans un numéro de version : le `.tar.gz` garde la version de
-`DESCRIPTION` (`hprimxml_0.2.0.tar.gz`), et l'étiquette complète est inscrite dans un champ
+`DESCRIPTION` (`hprimxml_0.3.0.tar.gz`), et l'étiquette complète est inscrite dans un champ
 dédié, lisible une fois le package installé :
 
 ```r
-packageDescription("hprimxml")[["Config/hprimxml/release"]]    # "0.2.0+alpha1.0"
+packageDescription("hprimxml")[["Config/hprimxml/release"]]    # "0.3.0+alpha1.0"
 ```
 
 Le `.tar.gz` d'une release contient les **vignettes déjà construites** : l'installer depuis la
 release installe aussi les vignettes. Après l'avoir téléchargé depuis la page de la release
-(ou avec `gh release download 0.2.0+alpha1.0`) :
+(ou avec `gh release download 0.3.0+alpha1.0`) :
 
 ```r
-install.packages("hprimxml_0.2.0.tar.gz", repos = NULL, type = "source")
+install.packages("hprimxml_0.3.0.tar.gz", repos = NULL, type = "source")
 ```
 
 ## Documentation
@@ -849,3 +1023,26 @@ Pages par `.github/workflows/pkgdown.yaml`, qui vérifie au passage que ce READM
 knitr::knit("README.Rmd")        # après toute modification d'un exemple
 pkgdown::build_site()
 ```
+
+## Licence
+
+```
+hprimxml, R package to interact with French HPRIM XML interoperability standards
+Copyright (C) 2024-2026 Guillaume Pressiat
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published
+by the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+```
+
+Le texte complet de la licence est dans le fichier [LICENSE.md](LICENSE.md).
+

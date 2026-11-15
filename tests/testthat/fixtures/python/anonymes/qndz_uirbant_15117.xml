@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<evenementsServeurEtatsPatient xmlns="http://www.hprim.org/hprimXML" version="2.00" acquittementAttendu="non">
+  <enteteMessage>
+    <identifiantMessage>30231_cosx</identifiantMessage>
+    <dateHeureProduction>2023-05-18T01:01:01</dateHeureProduction>
+    <emetteur>
+      <agents>
+        <agent categorie="application">
+          <code>TEST</code>
+        </agent>
+      </agents>
+    </emetteur>
+    <destinataire>
+      <agents>
+        <agent categorie="application"/>
+      </agents>
+    </destinataire>
+    <commentaireMessage>DJQJL-RTOQ</commentaireMessage>
+  </enteteMessage>
+  <patient confidentiel="non">
+    <identifiant>
+      <emetteur etat="permanent" portee="local" referent="non">
+        <valeur>960540679</valeur>
+      </emetteur>
+      <recepteur etat="permanent" portee="local" referent="non">
+        <valeur>960540679</valeur>
+      </recepteur>
+    </identifiant>
+    <personnePhysique sexe="M">
+      <nomUsuel>MICHAUD</nomUsuel>
+      <prenoms>
+        <prenom>VINCENT</prenom>
+      </prenoms>
+      <dateNaissance>
+        <date>1969-05-18</date>
+      </dateNaissance>
+    </personnePhysique>
+  </patient>
+  <venue prive="non">
+    <identifiant>
+      <emetteur>
+        <valeur>386997733</valeur>
+      </emetteur>
+      <recepteur>
+        <valeur>386997733</valeur>
+      </recepteur>
+    </identifiant>
+    <entree>
+      <dateHeureOptionnelle>
+        <date>2023-05-18</date>
+        <heure>08:00:00</heure>
+      </dateHeureOptionnelle>
+      <uniteFonctionnelleResponsable>
+        <code>4321</code>
+      </uniteFonctionnelleResponsable>
+    </entree>
+  </venue>
+  <intervention>
+    <identifiant>
+      <emetteur>448760746157</emetteur>
+    </identifiant>
+    <uniteFonctionnelle>
+      <code>4321</code>
+    </uniteFonctionnelle>
+  </intervention>
+  <Diagnostics>
+    <diagnostic action="creation" type="dp">
+      <dateAction>2023-05-18T08:10:00</dateAction>
+      <codeCim10>Z511</codeCim10>
+    </diagnostic>
+    <diagnostic action="creation" type="dr">
+      <dateAction>2023-05-18T08:10:00</dateAction>
+      <codeCim10>C10</codeCim10>
+    </diagnostic>
+  </Diagnostics>
+</evenementsServeurEtatsPatient>

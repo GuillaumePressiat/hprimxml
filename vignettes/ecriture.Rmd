@@ -89,18 +89,18 @@ deux RUM. Le script écrit le séjour en un fichier, puis en RUM unitaires, et l
 
 ```{r, include = FALSE}
 # tables du séjour, conservées pour la suite (les scripts suivants réutilisent ces noms)
-sejour <- list(evenements = evenements, rum = rum, diagnostics = diagnostics, actes = actes,
+sejour <- list(evenements = evenements, rum = rum, diagnostics = diagnostics, actes_ccam = actes_ccam,
                entete = entete)
 ```
 
 Les quatre tables : `evenements` (une ligne par séjour), `rum` (une ligne par RUM),
-`diagnostics` (format long) et `actes` (une ligne par acte CCAM).
+`diagnostics` (format long) et `actes_ccam` (une ligne par acte CCAM).
 
 ```{r, echo = FALSE}
 tab(evenements)
 tab(rum)
 tab(diagnostics)
-tab(actes)
+tab(actes_ccam)
 ```
 
 Le second RUM, en RUM unitaire :
@@ -132,7 +132,7 @@ avec mutation, conservées dans la liste `sejour`. Trois règles encadrent le no
 - deux messages de même nom font échouer l'écriture.
 
 ```{r}
-write_evenements_pmsi(sejour$evenements, sejour$rum, sejour$diagnostics, sejour$actes,
+write_evenements_pmsi(sejour$evenements, sejour$rum, sejour$diagnostics, sejour$actes_ccam,
                       entete = sejour$entete, out_dir = "depot", xmlns = NULL, par_rum = TRUE,
                       filename = "R{rss_id}_{rum_id}.xml", fichier_ok = TRUE)
 list.files("depot")
@@ -159,14 +159,14 @@ basename(f)
 
 ## Serveur d'actes : `write_evenements_serveur_actes()`
 
-Deux tables : `evenements` (patient, venue, intervention et demande) et `actes` (une ligne par
+Deux tables : `evenements` (patient, venue, intervention et demande) et `actes_ccam` (une ligne par
 acte CCAM, avec son exécutant). Le script régénère le fichier d'exemple du projet.
 
-```{r actes, code = ex("serveur_actes")}
+```{r actes_ccam, code = ex("serveur_actes")}
 ```
 
 ```{r, echo = FALSE}
-tab(actes)
+tab(actes_ccam)
 ```
 
 Le premier acte produit :
@@ -176,6 +176,29 @@ voir_xml("sortie/actes/00001_acte.xml", "<acteCCAM", "</acteCCAM>")
 ```
 
 `quantite` est ici une chaîne : le XSD la définit comme `nombre5`, une chaîne de chiffres.
+
+### Actes NGAP : consultations, forfaits techniques, biologie
+
+Un message serveur d'actes peut aussi porter des actes NGAP, seuls ou à côté des actes CCAM :
+table `actes_ngap`, une ligne par acte, passée par l'argument `actes_ngap` (la table `actes_ccam`
+devient alors facultative). Colonnes obligatoires : `evt_id`, `acte_id`, `lettre_cle`,
+`coefficient`, `date_execution`, `medecin` ; facultatives : `heure_execution`, `uf`,
+`quantite`, `denombrement`, `nabm` (codes NABM : colonne liste ou chaîne séparée par des
+virgules), `montant_total`, `numero_forfait_technique`, `numero_agrement_appareil` (forfaits
+techniques), `action`, `facturable`, `valide`. Le reste passe par des colonnes-chemins
+relatives à `acteNGAP`. Chaque acte NGAP porte sa propre action : avec `par_acte = TRUE`, les
+actes CCAM puis NGAP d'un événement donnent chacun un message.
+
+Exemple (lettres-clés et codes illustratifs) :
+
+```{r ngap, code = ex("ngap")}
+```
+
+La table `actes_ngap` relue :
+
+```{r, echo = FALSE}
+tab(relu)
+```
 
 ## États patient (ESEP) : `write_evenements_etat_patient()`
 

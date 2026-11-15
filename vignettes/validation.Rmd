@@ -127,6 +127,53 @@ nettoye <- hprim_to_xml(msg)
 c(brut = grepl("<seance", brut), nettoye = grepl("<seance", nettoye))
 ```
 
+## Anciennes versions
+
+Les dix versions embarquées (1.03a à 2.4) s'écrivent et se lisent avec les mêmes fonctions,
+via l'argument `version`. Quelques particularités :
+
+- **Valeurs énumérées et accents.** Les versions 1.0x n'admettent que `création` (accentué),
+  les versions 2.x acceptent aussi `creation`. À l'écriture, une valeur absente de
+  l'énumération du XSD est remplacée par la forme du XSD quand une seule valeur autorisée lui
+  correspond aux accents près : `creation` devient `création` en 1.0x, et `réel`, lu dans un
+  vieux fichier, devient `reel` dans une version qui n'admet que cette forme.
+- **Champs propres à une version.** Certains champs sont obligatoires dans certaines versions
+  seulement (nom usuel et prénom en PMSI 1.0x, `venue/@projetTherapeutique` et
+  `divers/@litDedie` en états patient 2.1 à 2.3), d'autres n'existent pas encore dans les
+  anciennes (`medecinResponsable/noRPPS` en 1.03a). La validation et le mode strict le
+  signalent ; une colonne facultative laissée vide n'est jamais un obstacle.
+- **XSD PMSI 1.06.** Le XSD officiel PMSI de la version 1.06 est lui-même invalide : il ne
+  peut pas être compilé. Les fichiers 1.06 se lisent normalement, mais leur validation est
+  impossible (erreur de classe `hprim_schema_error`) : pour écrire en 1.06, passer
+  `validate_xsd = FALSE`.
+
+```{r}
+x <- sub('version="2.00"', 'version="1.06"', paste(readLines(f, warn = FALSE), collapse = "\n"), fixed = TRUE)
+tryCatch(hprim_validate(x), hprim_schema_error = function(e) conditionMessage(e))
+```
+
+### Fichiers d'une version sans XSD
+
+Un fichier qui déclare une version absente (1.0, par exemple) se lit avec le XSD d'une version
+proche, en forçant `version`. Pour trouver la plus proche :
+
+```{r}
+x1 <- sub('version="2.00"', 'version="1.0"', paste(readLines(f, warn = FALSE), collapse = "\n"), fixed = TRUE)
+for (v in hprim_available_versions()) {
+  n <- tryCatch(length(grep("'version'", hprim_validate(x1, version = v), invert = TRUE, value = TRUE)),
+                hprim_schema_error = function(e) NA)
+  cat(v, ":", if (is.na(n)) "XSD officiel invalide" else paste(n, "erreur(s)"), "\n")
+}
+```
+
+Puis `read_evenements_pmsi(fichier, version = "1.03a")`, et les tables relues se réécrivent
+dans une autre version (`version = "2.00"`), avec validation : c'est une façon de convertir
+des fichiers anciens. Pour une conversion exhaustive, passer par la liste
+(`hprim_parse_xml(f, version = ...)` puis `hprim_to_xml(..., version = "2.00")`) : le mode
+strict signale chaque élément qui n'existe plus dans la version cible. Des feuilles XSL de
+montée de version (serveur d'actes, 1.03a et suivantes) sont aussi publiées par Frédéric
+Laurent : <https://github.com/flrt/hprimxml>.
+
 ## Ce que la validation ne vérifie pas
 
 Le XSD contrôle la **forme** d'un message, pas son sens :

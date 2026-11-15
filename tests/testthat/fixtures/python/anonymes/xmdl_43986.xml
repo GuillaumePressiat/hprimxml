@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<evenementsPMSI xmlns="http://www.hprim.org/hprimXML" version="2.00" acquittementAttendu="oui">
+  <enteteMessage modeTraitement="reel">
+    <identifiantMessage>48251_pxmu</identifiantMessage>
+    <dateHeureProduction>2023-11-07T01:01:01</dateHeureProduction>
+    <emetteur>
+      <agents>
+        <agent categorie="application">
+          <code>TEST</code>
+        </agent>
+      </agents>
+    </emetteur>
+    <destinataire>
+      <agents>
+        <agent categorie="application"/>
+      </agents>
+    </destinataire>
+    <commentaireMessage>NFBEI-YPBD</commentaireMessage>
+  </enteteMessage>
+  <evenementPMSI>
+    <patient confidentiel="non" anonyme="non">
+      <identifiant>
+        <emetteur>
+          <valeur>214432276</valeur>
+        </emetteur>
+        <recepteur>
+          <valeur>214432276</valeur>
+        </recepteur>
+      </identifiant>
+      <personnePhysique sexe="M">
+        <nomUsuel>LEVEQUE</nomUsuel>
+        <nomNaissance>LEVEQUE</nomNaissance>
+        <prenoms>
+          <prenom>ALEXANDRE</prenom>
+        </prenoms>
+        <dateNaissance>
+          <date>1969-11-07</date>
+        </dateNaissance>
+      </personnePhysique>
+    </patient>
+    <venue prive="non">
+      <identifiant>
+        <emetteur>
+          <valeur>996418862</valeur>
+        </emetteur>
+        <recepteur>
+          <valeur>996418862</valeur>
+        </recepteur>
+      </identifiant>
+      <entree>
+        <dateHeureOptionnelle>
+          <date>2023-11-07</date>
+          <heure>08:00:00</heure>
+        </dateHeureOptionnelle>
+        <modeEntree>
+          <code>8</code>
+        </modeEntree>
+        <uniteFonctionnelleResponsable>
+          <code>4321</code>
+        </uniteFonctionnelleResponsable>
+      </entree>
+    </venue>
+    <rss>
+      <identifiantRSS>
+        <emetteur>5</emetteur>
+        <recepteur>416</recepteur>
+      </identifiantRSS>
+      <rum action="creation" classant="non" prestationInterEtablissementA="non">
+        <dateAction>2023-11-07T08:10:00</dateAction>
+        <identifiant>
+          <emetteur>xmdl_43986</emetteur>
+          <recepteur>47300</recepteur>
+        </identifiant>
+        <medecinResponsable>
+          <identification>
+            <code>57823581</code>
+          </identification>
+          <personne>
+            <nomUsuel>GILLET</nomUsuel>
+            <prenoms>
+              <prenom>ALICE</prenom>
+            </prenoms>
+          </personne>
+        </medecinResponsable>
+        <uniteMedicale>
+          <code>4321</code>
+          <entree mode="8">
+            <date>2023-11-07</date>
+            <heure>08:00:00</heure>
+          </entree>
+        </uniteMedicale>
+        <diagnostics>
+          <diagnosticPrincipal>
+            <codeCim10>Z511</codeCim10>
+          </diagnosticPrincipal>
+          <diagnosticRelie>
+            <codeCim10>C10</codeCim10>
+          </diagnosticRelie>
+        </diagnostics>
+        <actes>
+          <acte externe="non">
+            <CCAM remboursementExceptionnel="non">
+              <codeActe>EBLA003</codeActe>
+              <codePhase>0</codePhase>
+              <codeActivite>1</codeActivite>
+              <quantite>1</quantite>
+              <dateRealisation>2023-11-07T08:10:00</dateRealisation>
+            </CCAM>
+          </acte>
+          <acte externe="non">
+            <CCAM remboursementExceptionnel="non">
+              <codeActe>EPLF002</codeActe>
+              <codePhase>0</codePhase>
+              <codeActivite>1</codeActivite>
+              <quantite>1</quantite>
+              <dateRealisation>2023-11-07T08:10:00</dateRealisation>
+            </CCAM>
+          </acte>
+          <acte externe="non">
+            <CCAM remboursementExceptionnel="non">
+              <codeActe>NFKA006</codeActe>
+              <codePhase>0</codePhase>
+              <codeActivite>1</codeActivite>
+              <quantite>1</quantite>
+              <dateRealisation>2023-11-07T08:10:00</dateRealisation>
+            </CCAM>
+          </acte>
+          <acte externe="non">
+            <CCAM remboursementExceptionnel="non">
+              <codeActe>YYYY033</codeActe>
+              <codePhase>0</codePhase>
+              <codeActivite>1</codeActivite>
+              <quantite>1</quantite>
+              <dateRealisation>2023-11-07T08:10:00</dateRealisation>
+            </CCAM>
+          </acte>
+        </actes>
+        <seance/>
+        <radiotherapie typeMachine="" typeDosimetrie="" nombreFaisceau=""/>
+      </rum>
+      <rum action="creation" classant="non" prestationInterEtablissementA="non">
+        <dateAction>2023-11-07T09:00:00</dateAction>
+        <identifiant>
+          <emetteur>xmdl_43986</emetteur>
+          <recepteur>42545</recepteur>
+        </identifiant>
+        <medecinResponsable>
+          <identification>
+            <code>57823581</code>
+          </identification>
+          <personne>
+            <nomUsuel>GILLET</nomUsuel>
+            <prenoms>
+              <prenom>ALICE</prenom>
+            </prenoms>
+          </personne>
+        </medecinResponsable>
+        <uniteMedicale>
+          <code>5000</code>
+          <entree mode="8">
+            <date>2023-11-07</date>
+            <heure>09:00:00</heure>
+          </entree>
+        </uniteMedicale>
+        <diagnostics>
+          <diagnosticPrincipal>
+            <codeCim10>Z743</codeCim10>
+          </diagnosticPrincipal>
+        </diagnostics>
+        <actes>
+          <acte externe="non">
+            <CCAM remboursementExceptionnel="non">
+              <codeActe>QZRP004</codeActe>
+              <codePhase>0</codePhase>
+              <codeActivite>1</codeActivite>
+              <quantite>1</quantite>
+              <dateRealisation>2023-11-07T09:10:00</dateRealisation>
+            </CCAM>
+          </acte>
+        </actes>
+        <seance/>
+        <radiotherapie typeMachine="" typeDosimetrie="" nombreFaisceau=""/>
+      </rum>
+    </rss>
+  </evenementPMSI>
+</evenementsPMSI>

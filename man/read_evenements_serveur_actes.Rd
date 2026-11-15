@@ -22,7 +22,8 @@ read_evenements_serveur_actes(
 \item{exiger_ok}{Ne lire que les \code{.xml} accompagnés de leur \code{.ok}.}
 }
 \value{
-Liste de tibbles \code{evenements}, \code{actes}.
+Liste de tibbles \code{evenements}, \code{actes_ccam} (CCAM), \code{actes_ngap} (NGAP, avec une colonne
+liste \code{nabm}).
 }
 \description{
 Lire des messages evenementsServeurActes vers des tables
@@ -31,5 +32,5 @@ Lire des messages evenementsServeurActes vers des tables
 f <- system.file("extdata", "actes_00001.xml", package = "hprimxml")
 t <- read_evenements_serveur_actes(f)
 t$evenements[, c("evt_id", "ipp", "nda", "intervention_id")]
-t$actes[, c("evt_id", "acte_id", "code", "date_execution", "medecin")]
+t$actes_ccam[, c("evt_id", "acte_id", "code", "date_execution", "medecin")]
 }

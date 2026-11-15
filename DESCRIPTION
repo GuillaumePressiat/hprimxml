@@ -1,7 +1,7 @@
 Package: hprimxml
 Type: Package
 Title: Écriture et lecture de fichiers HPRIM XML
-Version: 0.2.0
+Version: 0.3.0
 Authors@R: person("Guillaume", "Pressiat", email = "guillaume.pressiat@chu-brest.fr",
     role = c("aut", "cre"))
 Description: Écriture et lecture de messages HPRIM XML (standard
@@ -10,7 +10,7 @@ Description: Écriture et lecture de messages HPRIM XML (standard
     Guidé par les schémas XSD officiels embarqués (versions 1.03a à 2.4).
     Portage R du package Python pyhprimxml : mêmes tables, mêmes options,
     sortie XML identique octet pour octet.
-License: AGPL-3
+License: AGPL (>= 3)
 Encoding: UTF-8
 Language: fr
 Depends: R (>= 4.1)
@@ -19,6 +19,7 @@ Imports:
     hms,
     tibble,
     tools,
+    openssl,
     stats,
     utils
 Suggests:
@@ -30,13 +31,15 @@ Config/testthat/edition: 3
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.1
 Collate: 
-    'xsd.R'
+    'faker_noms.R'
     'write.R'
+    'parse.R'
+    'xsd.R'
     'common.R'
+    'anonymiser.R'
     'depots.R'
     'serveur_actes.R'
     'etat_patient.R'
     'hprimxml-package.R'
-    'parse.R'
     'pmsi.R'
 URL: https://guillaumepressiat.github.io/hprimxml/, https://github.com/GuillaumePressiat/hprimxml
